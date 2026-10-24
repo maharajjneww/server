@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  web:
+    image: nginx:alpine
+    container_name: matka_nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: matka_php
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: mysql
+      DB_DATABASE: matka_db
+      DB_USERNAME: matka_user
+      DB_PASSWORD: SecretPass@2026
+      REDIS_HOST: redis
+      JWT_SECRET: matka_super_secure_jwt_secret_key_2026_xyz987
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    image: mysql:8.0
+    container_name: matka_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: RootSecretPass@2026
+      MYSQL_DATABASE: matka_db
+      MYSQL_USER: matka_user
+      MYSQL_PASSWORD: SecretPass@2026
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:alpine
+    container_name: matka_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data:

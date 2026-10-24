@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matka Live Admin Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0D1117;
+      --card-bg: #161B22;
+      --card-border: #30363D;
+      --gold-primary: #F5A623;
+      --gold-hover: #E09612;
+      --gold-gradient: linear-gradient(135deg, #F5A623 0%, #D48806 100%);
+      --text-main: #F0F6FC;
+      --text-muted: #8B949E;
+      --success: #3FB950;
+      --danger: #F85149;
+      --blue: #58A6FF;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #11161D;
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: var(--gold-primary);
+      color: #000;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+    .brand h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .admin-pill {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+
+    .container {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+    }
+
+    /* Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active {
+      color: var(--gold-primary);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gold-primary);
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    select, input[type="text"], input[type="password"], input[type="number"] {
+      width: 100%;
+      background: #0D1117;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.2s;
+    }
+    select:focus, input:focus {
+      border-color: var(--gold-primary);
+    }
+
+    .panna-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .auto-calc-box {
+      background: rgba(245, 166, 35, 0.08);
+      border: 1px dashed var(--gold-primary);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 13px;
+      color: var(--gold-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .auto-calc-box span { font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 15px; }
+
+    .btn-submit {
+      background: var(--gold-gradient);
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(245, 166, 35, 0.25);
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.95; }
+    .btn-submit:active { transform: scale(0.98); }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-queued { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
+    .badge-published { background: rgba(63, 185, 80, 0.15); color: var(--success); }
+    .badge-won { background: rgba(63, 185, 80, 0.2); color: var(--success); }
+    .badge-lost { background: rgba(248, 81, 73, 0.2); color: var(--danger); }
+    .badge-pending { background: rgba(245, 166, 35, 0.2); color: var(--gold-primary); }
+    .badge-risk-high { background: rgba(248, 81, 73, 0.2); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.4); }
+    .badge-risk-medium { background: rgba(245, 166, 35, 0.2); color: var(--gold-primary); border: 1px solid rgba(245, 166, 35, 0.4); }
+    .badge-risk-low { background: rgba(63, 185, 80, 0.15); color: var(--success); border: 1px solid rgba(63, 185, 80, 0.3); }
+    .badge-winner { background: rgba(63, 185, 80, 0.25); color: #3fb950; border: 1px solid #3fb950; font-weight: 800; }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-right: 4px;
+    }
+    .btn-action:hover { border-color: var(--gold-primary); color: var(--gold-primary); }
+    .btn-action.btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-action.btn-success:hover { border-color: var(--success); color: var(--success); }
+
+    /* Alert */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .alert-success { background: rgba(63, 185, 80, 0.15); border: 1px solid var(--success); color: var(--success); }
+    .alert-danger { background: rgba(248, 81, 73, 0.15); border: 1px solid var(--danger); color: var(--danger); }
+
+    /* Auth modal/box */
+    #auth-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(13, 17, 23, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .login-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Auth Screen Modal -->
+  <div id="auth-screen">
+    <div class="login-box">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom: 20px;">
+        <span class="brand-badge">ADMIN</span>
+        <h2 style="font-size:18px;">Matka Live Control</h2>
+      </div>
+      <div id="login-alert" class="alert alert-danger"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Admin Email</label>
+          <input type="text" id="login-email" value="admin@matkalive.internal" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" value="Admin@12345" required>
+        </div>
+        <button type="submit" class="btn-submit" style="margin-top: 8px;">Login to Admin Panel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CONTROL</span>
+      <h1>Matka Live &bull; Admin Panel</h1>
+    </div>
+    <div class="admin-pill">
+      <span id="admin-user-display">admin@matkalive.internal</span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div id="global-alert" class="alert"></div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-results', this)">Declare Results</button>
+      <button class="tab-btn" onclick="switchTab('tab-queue', this)">Queued & Recent</button>
+      <button class="tab-btn" onclick="switchTab('tab-wagers', this)">User Wagers (Live)</button>
+      <button class="tab-btn" onclick="switchTab('tab-analysis', this)">📊 Bet-Wise Analysis</button>
+      <button class="tab-btn" onclick="switchTab('tab-wallets', this)">Wallets & Withdrawals</button>
+    </div>
+
+    <!-- TAB 1: Declare Results -->
+    <div id="tab-results" class="tab-pane">
+      <div class="grid-2">
+        <!-- Form -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>🎯</span> Declare Market Result
+            </div>
+            <span style="font-size:12px; color:var(--text-muted);">Real-time Matka Math</span>
+          </div>
+
+          <form id="result-form">
+            <div class="form-group">
+              <label>Select Market</label>
+              <select id="market-select" required></select>
+            </div>
+
+            <div class="panna-group">
+              <div class="form-group">
+                <label>Open Panna (3)</label>
+                <input type="text" id="open-panna" maxlength="3" placeholder="479" value="479" required oninput="calcJodi()">
+              </div>
+              <div class="form-group">
+                <label>Jodi (2)</label>
+                <input type="text" id="jodi-input" maxlength="2" placeholder="06" value="06" required readonly style="background:#161B22; color:var(--gold-primary); font-weight:700;">
+              </div>
+              <div class="form-group">
+                <label>Close Panna (3)</label>
+                <input type="text" id="close-panna" maxlength="3" placeholder="268" value="268" required oninput="calcJodi()">
+              </div>
+            </div>
+
+            <div class="auto-calc-box">
+              <div>Matka Math Derived Result:</div>
+              <span id="derived-display">479 - 06 - 268</span>
+            </div>
+
+            <div class="form-group">
+              <label>Publication Mode</label>
+              <select id="delay-select">
+                <option value="0">⚡ Publish Immediately & Settle Wagers Now</option>
+                <option value="1">⏱️ 1-Minute Delay Buffer</option>
+                <option value="5">⏱️ 5-Minute Standard Delay (Section 20)</option>
+                <option value="10">⏱️ 10-Minute Delay Buffer</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Official Result</button>
+          </form>
+        </div>
+
+        <!-- Live Markets Summary -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>📊</span> Live Market Boards
+            </div>
+            <div>
+              <button class="btn-action btn-success" onclick="syncDpboss()">⚡ Sync DPBoss Real Data</button>
+              <button class="btn-action" onclick="loadMarkets()">Refresh</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Market</th>
+                  <th>Timing</th>
+                  <th>Live Result</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="markets-table-body">
+                <tr><td colspan="4" style="color:var(--text-muted); text-align:center;">Loading markets...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Queued & Pending Results -->
+    <div id="tab-queue" class="tab-pane" style="display:none;">
+      <!-- Incoming DPBoss Staged Results -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📥</span> Incoming DPBoss Results (Awaiting Admin Action)
+          </div>
+          <div>
+            <button class="btn-action btn-success" onclick="syncDpboss()">⚡ Sync DPBoss Live</button>
+            <button class="btn-action" onclick="loadPendingResults()">Refresh Queue</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Market</th>
+                <th>DPBoss Result</th>
+                <th>Source</th>
+                <th>Detected At</th>
+                <th>Status</th>
+                <th>Admin Actions (Publish or Schedule)</th>
+              </tr>
+            </thead>
+            <tbody id="dpboss-incoming-body">
+              <tr><td colspan="7" style="color:var(--text-muted); text-align:center;">No pending DPBoss results. All clear.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Active Delayed Publishing Countdown Queue -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⏳</span> Active Scheduled Delayed Queue
+          </div>
+          <span style="font-size:12px; color:var(--text-muted);">Results automatically publish & settle when countdown reaches 0</span>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Market</th>
+                <th>Declared Result</th>
+                <th>Publish Time</th>
+                <th>Countdown</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="scheduled-queue-body">
+              <tr><td colspan="7" style="color:var(--text-muted); text-align:center;">No results currently in countdown queue.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: User Wagers (Live) -->
+    <div id="tab-wagers" class="tab-pane" style="display:none;">
+      <!-- Stats Overview Cards -->
+      <div class="stat-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+        <div class="card" style="padding:14px; border-left: 3px solid var(--blue);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bets Placed</div>
+          <div id="stat-total-bets" style="font-size:22px; font-weight:800; color:var(--text-main); margin-top:4px;">0</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--gold-primary);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Pts Staked</div>
+          <div id="stat-total-staked" style="font-size:22px; font-weight:800; color:var(--gold-primary); margin-top:4px;">0 pts</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--success);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Win Payout</div>
+          <div id="stat-total-won" style="font-size:22px; font-weight:800; color:var(--success); margin-top:4px;">0 pts</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid #E09612;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Active Pending Bets</div>
+          <div id="stat-pending-bets" style="font-size:22px; font-weight:800; color:#E09612; margin-top:4px;">0</div>
+        </div>
+      </div>
+
+      <!-- Filter Controls -->
+      <div class="card" style="margin-bottom: 16px; padding: 12px 16px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; flex:1;">
+            <input type="text" id="wager-search" placeholder="Search user, email, pick..." oninput="debounceLoadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:200px;">
+            <select id="wager-status-filter" onchange="loadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
+              <option value="ALL">All Statuses</option>
+              <option value="PENDING">PENDING Only</option>
+              <option value="WON">WON Only</option>
+              <option value="LOST">LOST Only</option>
+            </select>
+            <select id="wager-market-filter" onchange="loadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
+              <option value="ALL">All Markets</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" style="background:linear-gradient(135deg, #1f6feb 0%, #8957e5 100%); color:#fff; font-weight:600;" onclick="switchTab('tab-analysis', document.querySelectorAll('.tab-btn')[3])">📊 Bet-Wise Load & Risk Sheet</button>
+            <button class="btn-action" onclick="loadWagers()">🔄 Refresh Bets</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wagers Table -->
+      <div class="card">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Time</th>
+                <th>User Details</th>
+                <th>Market</th>
+                <th>Game Type</th>
+                <th>Pick #</th>
+                <th>Wager Pts</th>
+                <th>Potential Win</th>
+                <th>Status</th>
+                <th>Settled At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wagers-table-body">
+              <tr><td colspan="11" style="color:var(--text-muted); text-align:center;">Loading wagers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Bet-Wise & Result Analysis -->
+    <div id="tab-analysis" class="tab-pane" style="display:none;">
+      <!-- Controls -->
+      <div class="card" style="margin-bottom: 20px; padding: 14px 18px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; flex:1;">
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">SELECT MARKET</label>
+              <select id="analysis-market-select" onchange="loadBetAnalysis()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:180px;">
+                <option value="ALL">All Markets Combined</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">GAME TYPE</label>
+              <select id="analysis-type-select" onchange="loadBetAnalysis()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
+                <option value="ALL">All Game Types</option>
+                <option value="single_ank">Single Ank (1 Digit)</option>
+                <option value="jodi">Jodi (2 Digits)</option>
+                <option value="single_panna">Single Panna (3 Digits)</option>
+                <option value="double_panna">Double Panna (3 Digits)</option>
+                <option value="triple_panna">Triple Panna (3 Digits)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px; font-weight:600;">DATE</label>
+              <input type="date" id="analysis-date-input" onchange="loadBetAnalysis()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
+            </div>
+          </div>
+          <div>
+            <button class="btn-action" onclick="loadBetAnalysis()">🔄 Refresh Analysis</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Result Summary Banner (if a result exists for this market & date) -->
+      <div id="analysis-result-banner" class="card" style="display:none; margin-bottom:20px; border-left:4px solid var(--gold-primary); background:rgba(218, 165, 32, 0.05);">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
+          <div>
+            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market Result Status</div>
+            <div style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+              <span id="analysis-market-name" style="font-size:18px; font-weight:800; color:var(--text-main);">MILAN DAY</span>
+              <span id="analysis-result-digits" class="mono" style="font-size:22px; font-weight:800; color:var(--gold-primary); letter-spacing:1px;">479 - 06 - 268</span>
+              <span id="analysis-result-status-badge" class="badge">PUBLISHED</span>
+            </div>
+          </div>
+          <div id="analysis-result-source" style="font-size:12px; color:var(--text-muted);">Source: DPBoss Feed</div>
+        </div>
+      </div>
+
+      <!-- Financial Health & Exposure KPI Cards -->
+      <div class="stat-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom: 24px;">
+        <div class="card" style="padding:16px; border-left: 3px solid var(--blue);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bets Placed</div>
+          <div id="analysis-total-bets" style="font-size:24px; font-weight:800; color:var(--text-main); margin-top:4px;">0</div>
+          <div id="analysis-bets-breakdown" style="font-size:11px; color:var(--text-muted); margin-top:4px;">0 Won &bull; 0 Lost &bull; 0 Pending</div>
+        </div>
+
+        <div class="card" style="padding:16px; border-left: 3px solid var(--gold-primary);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Stakes Collected (In)</div>
+          <div id="analysis-total-staked" style="font-size:24px; font-weight:800; color:var(--gold-primary); margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">User staked points</div>
+        </div>
+
+        <div class="card" style="padding:16px; border-left: 3px solid #E09612;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Winning Payouts (Out)</div>
+          <div id="analysis-total-payout" style="font-size:24px; font-weight:800; color:#E09612; margin-top:4px;">0 pts</div>
+          <div id="analysis-exposure-sub" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Exposure: 0 pts</div>
+        </div>
+
+        <div class="card" id="analysis-pnl-card" style="padding:16px; border-left: 3px solid var(--success);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">House Net Profit / Loss</div>
+          <div id="analysis-net-pnl" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">+0 pts</div>
+          <div id="analysis-margin-pct" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Margin: 0%</div>
+        </div>
+      </div>
+
+      <!-- Bet-Wise Load & Risk Sheet Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📋</span> Bet-Wise Exposure & Load Sheet (Aggregated by Selection)
+          </div>
+          <div style="font-size:12px; color:var(--text-muted);">
+            Identifies high-liability numbers, exposure distribution, and result matches
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th>Game Type</th>
+                <th>Bet Pick #</th>
+                <th>Total Bets</th>
+                <th>Users</th>
+                <th>Total Staked</th>
+                <th>Multiplier</th>
+                <th>Potential Payout (Exposure)</th>
+                <th>Risk Level</th>
+                <th>Result Match</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="analysis-table-body">
+              <tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">Loading analysis...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Wallets & Withdrawals -->
+    <div id="tab-wallets" class="tab-pane" style="display:none;">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>💳</span> Simulated Demo Withdrawals
+            </div>
+            <button class="btn-action" onclick="loadWithdrawals()">Refresh</button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="withdrawals-table-body">
+                <tr><td colspan="4" style="color:var(--text-muted); text-align:center;">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>💰</span> Adjust User Demo Points
+            </div>
+          </div>
+          <form id="adjust-form">
+            <div class="form-group">
+              <label>Select User</label>
+              <select id="wallet-user-select" required></select>
+            </div>
+            <div class="form-group">
+              <label>Points to Add (+) or Deduct (-)</label>
+              <input type="number" id="adjust-amount" placeholder="e.g. 5000 or -2000" required>
+            </div>
+            <div class="form-group">
+              <label>Reason / Audit Note</label>
+              <input type="text" id="adjust-reason" placeholder="Admin bonus or correction" required>
+            </div>
+            <button type="submit" class="btn-submit">Submit Balance Adjustment</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let token = localStorage.getItem('admin_token') || '';
+    const API_BASE = '/api';
+
+    // Auth verification
+    async function checkAuth() {
+      if (token) {
+        try {
+          const res = await fetch(`${API_BASE}/admin/results/pending`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('admin_token');
+            token = '';
+            document.getElementById('auth-screen').style.display = 'flex';
+            return;
+          }
+          document.getElementById('auth-screen').style.display = 'none';
+          initDashboard();
+        } catch (e) {
+          document.getElementById('auth-screen').style.display = 'none';
+          initDashboard();
+        }
+      } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const alert = document.getElementById('login-alert');
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success && data.data.token) {
+          const u = data.data.user;
+          const isAdmin = (u.role_id === 3 || u.role === 'admin' || (u.email && u.email.startsWith('admin@')));
+          if (!isAdmin) {
+            alert.innerText = 'Account is not an authorized administrator.';
+            alert.style.display = 'block';
+            return;
+          }
+          token = data.data.token;
+          localStorage.setItem('admin_token', token);
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('admin-user-display').innerText = data.data.user.email;
+          initDashboard();
+        } else {
+          alert.innerText = data.message || 'Login failed.';
+          alert.style.display = 'block';
+        }
+      } catch (err) {
+        alert.innerText = 'Server connection error: ' + err.message;
+        alert.style.display = 'block';
+      }
+    });
+
+    function logout() {
+      localStorage.removeItem('admin_token');
+      token = '';
+      location.reload();
+    }
+
+    function showAlert(msg, isSuccess = true) {
+      const el = document.getElementById('global-alert');
+      el.className = isSuccess ? 'alert alert-success' : 'alert alert-danger';
+      el.innerText = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+      if (btn) btn.classList.add('active');
+
+      if (tabId === 'tab-queue') loadPendingResults();
+      if (tabId === 'tab-wagers') loadWagers();
+      if (tabId === 'tab-analysis') loadBetAnalysis();
+      if (tabId === 'tab-wallets') { loadWithdrawals(); loadWallets(); }
+    }
+
+    // Dynamic Matka Math Calculator
+    function calcJodi() {
+      const open = document.getElementById('open-panna').value.trim();
+      const close = document.getElementById('close-panna').value.trim();
+      let openDigit = '*';
+      let closeDigit = '*';
+
+      if (/^\d{3}$/.test(open)) {
+        const sum = open.split('').reduce((a, b) => a + parseInt(b), 0);
+        openDigit = sum % 10;
+      }
+      if (/^\d{3}$/.test(close)) {
+        const sum = close.split('').reduce((a, b) => a + parseInt(b), 0);
+        closeDigit = sum % 10;
+      }
+
+      const jodi = `${openDigit}${closeDigit}`;
+      document.getElementById('jodi-input').value = jodi;
+      document.getElementById('derived-display').innerText = `${open || '***'} - ${jodi} - ${close || '***'}`;
+    }
+
+    // Load Markets
+    async function loadMarkets() {
+      try {
+        const res = await fetch(`${API_BASE}/markets`);
+        const json = await res.json();
+        if (json.success) {
+          const select = document.getElementById('market-select');
+          select.innerHTML = '';
+          const tbody = document.getElementById('markets-table-body');
+          tbody.innerHTML = '';
+
+          // Populate market filter in User Bets tab
+          const wagerMarketSelect = document.getElementById('wager-market-filter');
+          if (wagerMarketSelect) {
+            const currentFilter = wagerMarketSelect.value;
+            wagerMarketSelect.innerHTML = '<option value="ALL">All Markets</option>';
+            json.data.forEach(m => {
+              const opt = document.createElement('option');
+              opt.value = m.id;
+              opt.innerText = m.name;
+              wagerMarketSelect.appendChild(opt);
+            });
+            wagerMarketSelect.value = currentFilter || 'ALL';
+          }
+
+          json.data.forEach(m => {
+            // Select option
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.innerText = `${m.name} (${m.open_time} - ${m.close_time})`;
+            select.appendChild(opt);
+
+            // Table row
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="font-weight:600; color:var(--gold-primary);">${m.name}</td>
+              <td style="color:var(--text-muted); font-size:12px;">${m.open_time} - ${m.close_time}</td>
+              <td class="mono" style="font-weight:700;">${m.open_panna}-${m.jodi}-${m.close_panna}</td>
+              <td>
+                <span class="badge ${m.status === 'running' ? 'badge-published' : 'badge-queued'}">${m.status}</span>
+                ${m.status === 'closed' ? `<button class="btn-action" style="font-size:10px; padding:2px 6px; margin-left:6px;" onclick="resetMarket('${m.id}')">Reset to Live</button>` : ''}
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function syncDpboss() {
+      if (!confirm('Fetch and synchronize latest real-world numbers from DPBoss feed?')) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/sync-live-feed`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          showAlert(`Successfully synchronized ${json.data.length} live markets from DPBoss!`);
+          loadMarkets();
+        } else {
+          showAlert(json.message || 'Sync failed', false);
+        }
+      } catch (e) {
+        showAlert(e.message, false);
+      }
+    }
+
+    async function resetMarket(id) {
+      if (!confirm(`Reset ${id} back to LIVE by clearing today's result?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/markets/${id}/reset-today`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        showAlert(json.message || 'Market reset to live.');
+        loadMarkets();
+      } catch (e) {
+        showAlert(e.message, false);
+      }
+    }
+
+    // Submit Result Form
+    document.getElementById('result-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const market_id = document.getElementById('market-select').value;
+      const open_panna = document.getElementById('open-panna').value.trim();
+      const jodi = document.getElementById('jodi-input').value.trim();
+      const close_panna = document.getElementById('close-panna').value.trim();
+      const delay_minutes = parseInt(document.getElementById('delay-select').value);
+
+      if (jodi.includes('*')) {
+        showAlert('Please enter valid 3-digit numbers for both Open and Close Panna.', false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/results`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ market_id, open_panna, jodi, close_panna, delay_minutes })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(data.message || 'Result submitted successfully!');
+          loadMarkets();
+        } else {
+          showAlert(data.message || 'Error declaring result', false);
+        }
+      } catch (err) {
+        showAlert('API request failed: ' + err.message, false);
+      }
+    });
+
+    // Countdown Ticker for Queued Results
+    let countdownInterval = null;
+
+    function formatSeconds(totalSec) {
+      if (totalSec === null || totalSec === undefined || totalSec <= 0) {
+        return '00:00 (Due)';
+      }
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} remaining`;
+    }
+
+    function startCountdownTicker() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        let hasDueResults = false;
+        document.querySelectorAll('.countdown-timer').forEach(el => {
+          let sec = parseInt(el.getAttribute('data-seconds') || '0', 10);
+          if (sec > 0) {
+            sec -= 1;
+            el.setAttribute('data-seconds', sec);
+            el.textContent = formatSeconds(sec);
+          } else {
+            el.textContent = 'Publishing...';
+            hasDueResults = true;
+          }
+        });
+
+        // If any scheduled countdown reached 0, trigger pending refresh after 2s
+        if (hasDueResults) {
+          setTimeout(loadPendingResults, 2000);
+        }
+      }, 1000);
+    }
+
+    // Load Pending Results (Partitioned into Incoming DPBoss and Active Queued Delay)
+    async function loadPendingResults() {
+      const incomingTbody = document.getElementById('dpboss-incoming-body');
+      const queuedTbody = document.getElementById('scheduled-queue-body');
+      if (!incomingTbody || !queuedTbody) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/results/pending`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const incomingList = [];
+          const queuedList = [];
+
+          json.data.forEach(r => {
+            if (r.status === 'queued_delay') {
+              queuedList.push(r);
+            } else {
+              incomingList.push(r);
+            }
+          });
+
+          // 1. Populate Incoming DPBoss Results
+          if (incomingList.length > 0) {
+            incomingTbody.innerHTML = '';
+            incomingList.forEach(r => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>#${r.id}</td>
+                <td style="font-weight:700; color:var(--text-main);">${r.market_name}</td>
+                <td><span class="mono" style="font-weight:800; color:var(--gold-primary); font-size:15px;">${r.open_panna} - ${r.jodi} - ${r.close_panna}</span></td>
+                <td><span class="badge" style="background:rgba(56, 139, 253, 0.15); color:#58a6ff; border:1px solid rgba(56, 139, 253, 0.3);">${r.source_name || 'DPBoss Feed'}</span></td>
+                <td class="mono" style="font-size:12px; color:var(--text-muted);">${r.received_at || r.result_date}</td>
+                <td><span class="badge badge-queued" style="background:rgba(210, 153, 34, 0.15); color:#d29922; border:1px solid rgba(210, 153, 34, 0.3);">Pending Review</span></td>
+                <td>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                    <button class="btn-action btn-success" onclick="publishNow(${r.id})" title="Publish immediately to app & settle bets">⚡ Publish Now</button>
+                    <button class="btn-action" style="background:#238636; color:#fff;" onclick="scheduleResult(${r.id}, 1)" title="Schedule with 1 minute delay">+1m</button>
+                    <button class="btn-action" style="background:#1f6feb; color:#fff;" onclick="scheduleResult(${r.id}, 5)" title="Schedule with 5 minute delay">+5m</button>
+                    <button class="btn-action" style="background:#8957e5; color:#fff;" onclick="scheduleResult(${r.id}, 10)" title="Schedule with 10 minute delay">+10m</button>
+                    <button class="btn-action" style="background:#30363d; color:#c9d1d9;" onclick="scheduleCustomMinutes(${r.id})" title="Enter custom minutes">Custom...</button>
+                    <button class="btn-action" style="background:linear-gradient(135deg, #1f6feb 0%, #8957e5 100%); color:#fff;" onclick="openMarketAnalysis('${r.market_id}')" title="Analyze bets on this market">📊 Bet Analysis</button>
+                    <button class="btn-action btn-danger" onclick="rejectResult(${r.id})" title="Reject and discard">Reject</button>
+                  </div>
+                </td>
+              `;
+              incomingTbody.appendChild(tr);
+            });
+          } else {
+            incomingTbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted); text-align:center; padding:18px;">No pending incoming results awaiting action.</td></tr>';
+          }
+
+          // 2. Populate Active Scheduled Delayed Queue
+          if (queuedList.length > 0) {
+            queuedTbody.innerHTML = '';
+            queuedList.forEach(r => {
+              const tr = document.createElement('tr');
+              const sec = Math.max(0, parseInt(r.seconds_remaining || 0, 10));
+              tr.innerHTML = `
+                <td>#${r.id}</td>
+                <td style="font-weight:700; color:var(--text-main);">${r.market_name}</td>
+                <td><span class="mono" style="font-weight:700; color:var(--gold-primary);">${r.open_panna} - ${r.jodi} - ${r.close_panna}</span></td>
+                <td class="mono" style="font-size:12px; color:var(--text-muted);">${r.scheduled_publish_at}</td>
+                <td>
+                  <span class="countdown-timer mono" data-id="${r.id}" data-seconds="${sec}" style="color:var(--gold-primary); font-weight:700; font-size:13px; background:rgba(218, 165, 32, 0.1); padding:4px 8px; border-radius:4px; border:1px solid rgba(218, 165, 32, 0.2);">
+                    ${formatSeconds(sec)}
+                  </span>
+                </td>
+                <td><span class="badge badge-queued">Scheduled Delay</span></td>
+                <td>
+                  <div style="display:flex; gap:6px;">
+                    <button class="btn-action btn-success" onclick="publishNow(${r.id})" title="Force publish immediately without waiting">⚡ Publish Now</button>
+                    <button class="btn-action btn-danger" onclick="rejectResult(${r.id})" title="Cancel scheduled release">Cancel</button>
+                  </div>
+                </td>
+              `;
+              queuedTbody.appendChild(tr);
+            });
+            startCountdownTicker();
+          } else {
+            queuedTbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted); text-align:center; padding:18px;">No results currently in countdown queue.</td></tr>';
+          }
+        }
+      } catch (e) {
+        incomingTbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger); text-align:center;">Failed to load queue.</td></tr>';
+        queuedTbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger); text-align:center;">Failed to load queue.</td></tr>';
+      }
+    }
+
+    async function scheduleResult(id, minutes) {
+      try {
+        const res = await fetch(`${API_BASE}/admin/results/${id}/schedule`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ delay_minutes: minutes })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(data.message || `Scheduled publication in ${minutes} minute(s).`);
+          loadPendingResults();
+        } else {
+          showAlert(data.message || 'Failed to schedule result.', false);
+        }
+      } catch (err) {
+        showAlert('API request failed: ' + err.message, false);
+      }
+    }
+
+    function scheduleCustomMinutes(id) {
+      const input = prompt('Enter delay in minutes before auto-publishing (e.g. 2, 15, 30):', '5');
+      if (input === null) return;
+      const mins = parseInt(input.trim(), 10);
+      if (isNaN(mins) || mins <= 0) {
+        showAlert('Please enter a valid positive number of minutes.', false);
+        return;
+      }
+      scheduleResult(id, mins);
+    }
+
+    async function publishNow(id) {
+      if (!confirm(`Force publish result #${id} now and settle all eligible user bets?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/results/${id}/publish`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showAlert(data.message || 'Published & bets settled.');
+        loadPendingResults();
+        loadMarkets();
+        loadWagers();
+      } catch (e) {
+        showAlert(e.message, false);
+      }
+    }
+
+    async function rejectResult(id) {
+      if (!confirm(`Cancel/Reject result #${id}?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/results/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Admin rejected' })
+        });
+        const data = await res.json();
+        showAlert(data.message || 'Rejected.');
+        loadPendingResults();
+      } catch (e) {
+        showAlert(e.message, false);
+      }
+    }
+
+    // Debounced Wager Search
+    let wagerDebounceTimer = null;
+    function debounceLoadWagers() {
+      clearTimeout(wagerDebounceTimer);
+      wagerDebounceTimer = setTimeout(loadWagers, 300);
+    }
+
+    // Load Live User Bets / Wagers
+    async function loadWagers() {
+      const tbody = document.getElementById('wagers-table-body');
+      const search = (document.getElementById('wager-search')?.value || '').trim();
+      const status = document.getElementById('wager-status-filter')?.value || 'ALL';
+      const marketId = document.getElementById('wager-market-filter')?.value || 'ALL';
+
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.set('search', search);
+      if (status && status !== 'ALL') queryParams.set('status', status);
+      if (marketId && marketId !== 'ALL') queryParams.set('market_id', marketId);
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/wagers?${queryParams.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+
+        // Update Overview Stat Cards if available
+        if (json.success && json.data) {
+          const stats = json.data.stats || {};
+          const totalBetsEl = document.getElementById('stat-total-bets');
+          const totalStakedEl = document.getElementById('stat-total-staked');
+          const totalWonEl = document.getElementById('stat-total-won');
+          const pendingBetsEl = document.getElementById('stat-pending-bets');
+
+          if (totalBetsEl) totalBetsEl.innerText = Number(stats.total_bets || 0).toLocaleString();
+          if (totalStakedEl) totalStakedEl.innerText = Number(stats.total_staked || 0).toLocaleString() + ' pts';
+          if (totalWonEl) totalWonEl.innerText = Number(stats.total_won_payout || 0).toLocaleString() + ' pts';
+          if (pendingBetsEl) pendingBetsEl.innerText = Number(stats.pending_count || 0).toLocaleString();
+
+          const wagers = Array.isArray(json.data.wagers) ? json.data.wagers : (Array.isArray(json.data) ? json.data : []);
+          allLoadedWagers = wagers;
+
+          if (wagers.length > 0) {
+            tbody.innerHTML = '';
+            wagers.forEach(w => {
+              const tr = document.createElement('tr');
+              const statusClass = w.status === 'WON' ? 'badge-won' : (w.status === 'LOST' ? 'badge-lost' : 'badge-pending');
+              const wagerPts = Number(w.points_wagered !== undefined ? w.points_wagered : (w.wager_amount || 0)).toLocaleString();
+              const winPts = Number(w.potential_win_points !== undefined ? w.potential_win_points : (w.potential_win || 0)).toLocaleString();
+
+              tr.innerHTML = `
+                <td class="mono" style="font-size:12px; color:var(--text-muted);">#${w.id}</td>
+                <td style="font-size:11px; color:var(--text-muted);">${w.placed_at || w.created_at || '-'}</td>
+                <td>
+                  <div style="font-weight:600; color:var(--text-main);">${w.user_name || 'User #' + w.user_id}</div>
+                  <div style="font-size:11px; color:var(--text-muted);">${w.user_email || ''}</div>
+                </td>
+                <td style="font-weight:600;">${w.market_name || w.market_id}</td>
+                <td><span class="badge" style="background:#161B22; border:1px solid #30363D; font-size:11px;">${w.game_type || w.wager_type}</span></td>
+                <td class="mono" style="font-weight:800; font-size:14px; color:var(--gold-primary);">${w.bet_number || w.selection}</td>
+                <td class="mono" style="font-weight:600;">${wagerPts} pts</td>
+                <td class="mono" style="color:var(--success); font-weight:700;">${winPts} pts</td>
+                <td><span class="badge ${statusClass}">${w.status}</span></td>
+                <td style="font-size:11px; color:var(--text-muted);">${w.settled_at || (w.status === 'PENDING' ? '⏳ Awaiting Result' : '-')}</td>
+                <td>
+                  <button class="btn-action" style="background:#1f6feb; color:#fff;" onclick="openEditWagerModal(${w.id})">✏️ Edit</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No user wagers match the selected filters.</td></tr>';
+          }
+        } else {
+          tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No user bets recorded yet.</td></tr>';
+        }
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="11" style="color:var(--danger); text-align:center;">Failed to load wagers.</td></tr>';
+      }
+    }
+
+    // Load Wallets for Adjustment
+    async function loadWallets() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/wallets`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const select = document.getElementById('wallet-user-select');
+          select.innerHTML = '';
+          json.data.forEach(w => {
+            const opt = document.createElement('option');
+            opt.value = w.user_id;
+            const bal = w.virtual_balance !== undefined ? w.virtual_balance : (w.balance || 0);
+            opt.innerText = `${w.name || w.user_name || 'User #' + w.user_id} (${w.email || w.user_email || ''}) — Bal: ${bal} pts`;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    // Adjust Points Form
+    document.getElementById('adjust-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user_id = document.getElementById('wallet-user-select').value;
+      const points = parseInt(document.getElementById('adjust-amount').value);
+      const reason = document.getElementById('adjust-reason').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/wallet-adjustment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ user_id, amount: points, points, operation: 'CREDIT', reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(data.message || 'Wallet adjusted successfully!');
+          loadWallets();
+          document.getElementById('adjust-amount').value = '';
+          document.getElementById('adjust-reason').value = '';
+        } else {
+          showAlert(data.message || 'Error adjusting wallet', false);
+        }
+      } catch (err) { showAlert(err.message, false); }
+    });
+
+    // Load Withdrawals
+    async function loadWithdrawals() {
+      const tbody = document.getElementById('withdrawals-table-body');
+      try {
+        const res = await fetch(`${API_BASE}/admin/demo-withdrawals`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          tbody.innerHTML = '';
+          json.data.forEach(w => {
+            const tr = document.createElement('tr');
+            const amt = w.amount !== undefined ? w.amount : (w.points_requested || 0);
+            tr.innerHTML = `
+              <td>${w.name || w.user_name || 'User #' + w.user_id}</td>
+              <td style="font-weight:700;">${amt} pts</td>
+              <td><span class="badge ${w.status === 'approved' ? 'badge-published' : 'badge-pending'}">${w.status}</span></td>
+              <td>
+                ${w.status === 'pending' ? `
+                  <button class="btn-action btn-success" onclick="approveWithdrawal(${w.id})">Approve</button>
+                  <button class="btn-action btn-danger" onclick="rejectWithdrawal(${w.id})">Reject</button>
+                ` : `<span style="color:var(--text-muted); font-size:12px;">Processed</span>`}
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted); text-align:center;">No withdrawal requests.</td></tr>';
+        }
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger); text-align:center;">Failed to load withdrawals.</td></tr>';
+      }
+    }
+
+    async function approveWithdrawal(id) {
+      try {
+        const res = await fetch(`${API_BASE}/admin/demo-withdrawals/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        showAlert(data.message || 'Approved.');
+        loadWithdrawals();
+      } catch (e) { showAlert(e.message, false); }
+    }
+
+    async function rejectWithdrawal(id) {
+      const reason = prompt('Reason for rejection:');
+      if (!reason) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/demo-withdrawals/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+        const data = await res.json();
+        showAlert(data.message || 'Rejected and refunded.');
+        loadWithdrawals();
+      } catch (e) { showAlert(e.message, false); }
+    }
+
+    function initDashboard() {
+      calcJodi();
+      loadMarkets();
+      const dateInput = document.getElementById('analysis-date-input');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    // ==========================================
+    // Bet-Wise Analysis & Exposure Logic
+    // ==========================================
+    async function loadBetAnalysis() {
+      const marketId = document.getElementById('analysis-market-select')?.value || 'ALL';
+      const wagerType = document.getElementById('analysis-type-select')?.value || 'ALL';
+      const dateVal = document.getElementById('analysis-date-input')?.value || '';
+
+      const queryParams = new URLSearchParams();
+      if (marketId && marketId !== 'ALL') queryParams.set('market_id', marketId);
+      if (wagerType && wagerType !== 'ALL') queryParams.set('wager_type', wagerType);
+      if (dateVal) queryParams.set('date', dateVal);
+
+      const tbody = document.getElementById('analysis-table-body');
+      if (!tbody) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/wagers/analysis?${queryParams.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const { markets, selected_market, result, summary, betwise } = json.data;
+
+          // 1. Populate market select options if not populated
+          const marketSelect = document.getElementById('analysis-market-select');
+          if (marketSelect && marketSelect.options.length <= 1 && Array.isArray(markets)) {
+            markets.forEach(m => {
+              const opt = document.createElement('option');
+              opt.value = m.id;
+              opt.innerText = m.name;
+              marketSelect.appendChild(opt);
+            });
+            marketSelect.value = marketId;
+          }
+
+          // 2. Result Banner
+          const banner = document.getElementById('analysis-result-banner');
+          if (result && selected_market) {
+            banner.style.display = 'block';
+            document.getElementById('analysis-market-name').innerText = selected_market.name;
+            document.getElementById('analysis-result-digits').innerText = `${result.open_panna} - ${result.jodi} - ${result.close_panna}`;
+            const stBadge = document.getElementById('analysis-result-status-badge');
+            stBadge.innerText = (result.status || '').toUpperCase();
+            stBadge.className = `badge ${result.status === 'published' ? 'badge-published' : 'badge-queued'}`;
+            document.getElementById('analysis-result-source').innerText = `Source: ${result.source_name || 'DPBoss Feed'} | Date: ${result.result_date}`;
+          } else {
+            banner.style.display = 'none';
+          }
+
+          // 3. KPI Cards
+          const s = summary || {};
+          const totalBets = Number(s.total_bets || 0);
+          const totalStaked = Number(s.total_staked || 0);
+          const totalPayout = Number(s.total_payout || 0);
+          const netPnl = Number(s.net_profit || 0);
+          const marginPct = Number(s.margin_pct || 0);
+
+          document.getElementById('analysis-total-bets').innerText = totalBets.toLocaleString();
+          document.getElementById('analysis-bets-breakdown').innerText = `${Number(s.won_count || 0)} Won • ${Number(s.lost_count || 0)} Lost • ${Number(s.pending_count || 0)} Pending • ${Number(s.cancelled_count || 0)} Cancelled`;
+          document.getElementById('analysis-total-staked').innerText = totalStaked.toLocaleString() + ' pts';
+          document.getElementById('analysis-total-payout').innerText = totalPayout.toLocaleString() + ' pts';
+          document.getElementById('analysis-exposure-sub').innerText = `Potential Exposure: ${Number(s.total_potential_exposure || 0).toLocaleString()} pts`;
+
+          const pnlEl = document.getElementById('analysis-net-pnl');
+          const pnlCard = document.getElementById('analysis-pnl-card');
+          if (netPnl >= 0) {
+            pnlEl.innerText = `+${netPnl.toLocaleString()} pts (Profit)`;
+            pnlEl.style.color = 'var(--success)';
+            pnlCard.style.borderLeftColor = 'var(--success)';
+          } else {
+            pnlEl.innerText = `${netPnl.toLocaleString()} pts (Loss)`;
+            pnlEl.style.color = 'var(--danger)';
+            pnlCard.style.borderLeftColor = 'var(--danger)';
+          }
+          document.getElementById('analysis-margin-pct').innerText = `House Margin: ${marginPct}%`;
+
+          // 4. Bet-Wise Table
+          if (Array.isArray(betwise) && betwise.length > 0) {
+            tbody.innerHTML = '';
+            betwise.forEach(b => {
+              const tr = document.createElement('tr');
+              const riskClass = b.risk_level === 'HIGH' ? 'badge-risk-high' : (b.risk_level === 'MEDIUM' ? 'badge-risk-medium' : 'badge-risk-low');
+              const resultBadge = b.is_result_match 
+                ? '<span class="badge badge-winner">🎯 WINNER</span>' 
+                : '<span style="color:var(--text-muted); font-size:12px;">—</span>';
+
+              tr.innerHTML = `
+                <td style="font-weight:600;">${b.market_name}</td>
+                <td><span class="badge" style="background:#161B22; border:1px solid #30363D; font-size:11px;">${b.wager_type}</span></td>
+                <td><span class="mono" style="font-weight:800; font-size:16px; color:var(--gold-primary);">${b.bet_number}</span></td>
+                <td class="mono" style="font-weight:700;">${b.bet_count}</td>
+                <td style="color:var(--text-muted); font-size:12px;">${b.unique_users}</td>
+                <td class="mono" style="font-weight:700;">${Number(b.total_staked).toLocaleString()} pts</td>
+                <td class="mono" style="color:var(--text-muted); font-size:12px;">${b.multiplier}x</td>
+                <td class="mono" style="color:var(--gold-primary); font-weight:700;">${Number(b.potential_payout).toLocaleString()} pts</td>
+                <td><span class="badge ${riskClass}">${b.risk_level} RISK</span></td>
+                <td>${resultBadge}</td>
+                <td>
+                  <button class="btn-action" onclick="filterWagersByPick('${b.bet_number}')" title="Inspect individual bets for this number">View Bets</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No wagers found for the selected market and criteria.</td></tr>';
+          }
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="11" style="color:var(--danger); text-align:center; padding:18px;">Error loading analysis: ${err.message}</td></tr>`;
+      }
+    }
+
+    function filterWagersByPick(pickNumber) {
+      switchTab('tab-wagers', document.querySelectorAll('.tab-btn')[2]);
+      const searchInput = document.getElementById('wager-search');
+      if (searchInput) {
+        searchInput.value = pickNumber;
+        loadWagers();
+      }
+    }
+
+    function openMarketAnalysis(marketId) {
+      switchTab('tab-analysis', document.querySelectorAll('.tab-btn')[3]);
+      const sel = document.getElementById('analysis-market-select');
+      if (sel) {
+        sel.value = marketId;
+      }
+      loadBetAnalysis();
+    }
+
+    // ==========================================
+    // Edit User Wager Modal & Logic
+    // ==========================================
+    let allLoadedWagers = [];
+    let currentEditingWagerId = null;
+    const WAGER_MULTIPLIERS = {
+      'single_ank': 9.0,
+      'jodi': 90.0,
+      'single_panna': 140.0,
+      'double_panna': 280.0,
+      'triple_panna': 600.0,
+    };
+
+    function openEditWagerModal(id) {
+      const w = allLoadedWagers.find(x => x.id == id);
+      if (!w) {
+        showAlert('Wager details not found in cache.', false);
+        return;
+      }
+      currentEditingWagerId = id;
+      document.getElementById('modal-wager-id').innerText = '#' + id;
+      document.getElementById('modal-user-display').innerText = (w.user_name || 'User #' + w.user_id) + (w.user_email ? ` (${w.user_email})` : '');
+      document.getElementById('modal-market-display').innerText = w.market_name || w.market_id;
+      document.getElementById('modal-placed-at').innerText = w.placed_at || w.created_at || '-';
+
+      const typeSelect = document.getElementById('modal-wager-type');
+      typeSelect.value = w.wager_type || w.game_type || 'jodi';
+
+      document.getElementById('modal-selection').value = w.selection || w.bet_number || '';
+      document.getElementById('modal-amount').value = w.wager_amount || w.points_wagered || 0;
+      document.getElementById('modal-status').value = w.status || 'PENDING';
+      document.getElementById('modal-admin-note').value = '';
+
+      onModalTypeOrAmountChange();
+
+      const modal = document.getElementById('edit-wager-modal');
+      modal.style.display = 'flex';
+    }
+
+    function closeEditWagerModal() {
+      const modal = document.getElementById('edit-wager-modal');
+      modal.style.display = 'none';
+      currentEditingWagerId = null;
+    }
+
+    function onModalTypeOrAmountChange() {
+      const type = document.getElementById('modal-wager-type').value;
+      const amount = parseInt(document.getElementById('modal-amount').value || '0', 10);
+      const mult = WAGER_MULTIPLIERS[type] || 90.0;
+      const potential = Math.round(amount * mult);
+      document.getElementById('modal-potential-display').innerText = `${potential.toLocaleString()} pts (${mult}x multiplier)`;
+    }
+
+    document.getElementById('edit-wager-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentEditingWagerId) return;
+
+      const wager_type = document.getElementById('modal-wager-type').value;
+      const selection = document.getElementById('modal-selection').value.trim();
+      const wager_amount = parseInt(document.getElementById('modal-amount').value, 10);
+      const status = document.getElementById('modal-status').value;
+      const admin_note = document.getElementById('modal-admin-note').value.trim();
+
+      if (!selection || isNaN(wager_amount) || wager_amount <= 0) {
+        showAlert('Please provide a valid selection and positive wager points.', false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/wagers/${currentEditingWagerId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ selection, wager_amount, wager_type, status, admin_note })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(data.message || `Wager #${currentEditingWagerId} updated successfully.`);
+          closeEditWagerModal();
+          loadWagers();
+          const analysisTab = document.getElementById('tab-analysis');
+          if (analysisTab && analysisTab.style.display !== 'none') {
+            loadBetAnalysis();
+          }
+        } else {
+          showAlert(data.message || 'Failed to update wager.', false);
+        }
+      } catch (err) {
+        showAlert('Network or API error: ' + err.message, false);
+      }
+    });
+
+    // Start
+    checkAuth();
+  </script>
+
+  <!-- Modal: Edit User Bet -->
+  <div id="edit-wager-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div class="card" style="width:100%; max-width:540px; margin:20px; box-shadow:0 12px 40px rgba(0,0,0,0.8); border:1px solid var(--card-border);">
+      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding-bottom:12px;">
+        <div class="card-title" style="font-size:18px;">
+          <span>✏️</span> Edit User Wager <span id="modal-wager-id" style="color:var(--gold-primary);">#--</span>
+        </div>
+        <button type="button" class="btn-action" onclick="closeEditWagerModal()" style="padding:4px 8px; font-size:14px;">✕</button>
+      </div>
+
+      <form id="edit-wager-form" style="margin-top:14px;">
+        <!-- User & Market Info Badge -->
+        <div style="background:#0D1117; padding:12px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:16px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="color:var(--text-muted);">User:</span>
+            <strong id="modal-user-display" style="color:var(--text-main);">User</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="color:var(--text-muted);">Market:</span>
+            <strong id="modal-market-display" style="color:var(--gold-primary);">Market</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-muted);">Placed At:</span>
+            <span id="modal-placed-at" class="mono" style="color:var(--text-muted);">Time</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Game Type</label>
+          <select id="modal-wager-type" onchange="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+            <option value="single_ank">Single Ank (1 Digit, 9x)</option>
+            <option value="jodi">Jodi (2 Digits, 90x)</option>
+            <option value="single_panna">Single Panna (3 Digits, 140x)</option>
+            <option value="double_panna">Double Panna (3 Digits, 280x)</option>
+            <option value="triple_panna">Triple Panna (3 Digits, 600x)</option>
+          </select>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Pick Number / Selection</label>
+            <input type="text" id="modal-selection" required style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--gold-primary); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Wager Points</label>
+            <input type="number" id="modal-amount" min="1" required oninput="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
+          </div>
+        </div>
+
+        <div style="background:rgba(46, 160, 67, 0.08); padding:10px 14px; border-radius:6px; border:1px solid rgba(46, 160, 67, 0.2); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:var(--text-muted);">Calculated Potential Win:</span>
+          <span id="modal-potential-display" class="mono" style="font-weight:800; color:var(--success); font-size:15px;">0 pts</span>
+        </div>
+
+        <div class="form-group">
+          <label>Wager Status</label>
+          <select id="modal-status" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+            <option value="PENDING">PENDING (Active in Market)</option>
+            <option value="WON">WON (Force Win & Credit Payout to User)</option>
+            <option value="LOST">LOST (Mark as Lost)</option>
+            <option value="CANCELLED">CANCELLED (Refund Stake Points to User Wallet)</option>
+          </select>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+            * Selecting CANCELLED refunds staked points to user wallet. Selecting WON credits winning payout.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Admin Note / Reason (for audit log)</label>
+          <input type="text" id="modal-admin-note" placeholder="e.g. Corrected selection as requested by user" required style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-action" onclick="closeEditWagerModal()">Cancel</button>
+          <button type="submit" class="btn-action btn-success" style="padding:8px 18px; font-weight:700;">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
