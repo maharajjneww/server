@@ -922,8 +922,14 @@
         });
         const json = await res.json();
         if (json.success) {
-          showAlert(`Successfully synchronized ${json.data.length} live markets from DPBoss!`);
+          const count = json.data.length;
+          if (count > 0) {
+            showAlert(`📥 Synced ${count} new/updated market result(s) from DPBoss! Awaiting your review in 'Queued & Recent' tab.`);
+          } else {
+            showAlert(`DPBoss feed checked: No new number changes since last check.`);
+          }
           loadMarkets();
+          loadPendingResults();
         } else {
           showAlert(json.message || 'Sync failed', false);
         }

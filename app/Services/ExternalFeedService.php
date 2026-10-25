@@ -122,16 +122,16 @@ class ExternalFeedService {
             $checkStmt->execute([':mid' => $marketId, ':dt' => $today]);
             $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
-            // If numbers haven't changed and already published, skip
+            // If numbers haven't changed, skip (already published or already in review)
             if ($existing && 
                 $existing['open_panna'] === $openPanna && 
                 $existing['jodi'] === $jodi && 
-                $existing['close_panna'] === $closePanna &&
-                $existing['status'] === 'published') {
+                $existing['close_panna'] === $closePanna) {
                 continue;
             }
 
-            // Results from DPBoss feed auto-update in DB (Section 21)
+            // Results from DPBoss feed enter 'pending_validation' Admin Review Queue (Section 20 & 21)
+            // Allows Admin to review numbers, evaluate bet liabilities, and publish or schedule on demand
             $stmt = $pdo->prepare("
                 INSERT INTO results (
                     market_id, result_date, open_panna, jodi, close_panna, 
@@ -139,15 +139,14 @@ class ExternalFeedService {
                 )
                 VALUES (
                     :market_id, :result_date, :open_panna, :jodi, :close_panna, 
-                    'published', NOW(), NOW(), NOW()
+                    'pending_validation', NULL, NULL, NOW()
                 )
                 ON DUPLICATE KEY UPDATE 
                     id = LAST_INSERT_ID(id),
                     open_panna = VALUES(open_panna),
                     jodi = VALUES(jodi),
                     close_panna = VALUES(close_panna),
-                    status = IF(status = 'queued_delay', 'queued_delay', 'published'),
-                    published_at = IF(status = 'queued_delay', published_at, NOW()),
+                    status = IF(status = 'queued_delay', 'queued_delay', 'pending_validation'),
                     received_at = NOW(),
                     updated_at = NOW()
             ");
@@ -162,21 +161,12 @@ class ExternalFeedService {
 
             $resultId = (int)$pdo->lastInsertId();
 
-            // Auto-settle eligible wagers if published
-            \App\Services\SettlementService::settleMarketWagers(
-                $marketId,
-                $resultId,
-                $openPanna,
-                $jodi,
-                $closePanna
-            );
-
             $synced[] = [
                 'market_id' => $marketId,
                 'name' => $rawName,
                 'raw_result' => $rawResult,
                 'parsed' => "$openPanna-$jodi-$closePanna",
-                'status' => 'published',
+                'status' => 'pending_validation',
             ];
         }
 
