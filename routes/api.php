@@ -81,6 +81,7 @@ return function (Router $router): void {
     $router->post('/api/admin/demo-withdrawals/{id}/reject', [AdminWalletController::class, 'rejectWithdrawal'], [AuthMiddleware::class, AdminMiddleware::class]);
     $router->get('/api/admin/wagers/analysis', [AdminWalletController::class, 'betAnalysis'], [AuthMiddleware::class, AdminMiddleware::class]);
     $router->get('/api/admin/wagers', [AdminWalletController::class, 'wagers'], [AuthMiddleware::class, AdminMiddleware::class]);
+    $router->get('/api/admin/wagers/{id}', [AdminWalletController::class, 'showWager'], [AuthMiddleware::class, AdminMiddleware::class]);
     $router->post('/api/admin/wagers/{id}', [AdminWalletController::class, 'updateWager'], [AuthMiddleware::class, AdminMiddleware::class]);
     $router->put('/api/admin/wagers/{id}', [AdminWalletController::class, 'updateWager'], [AuthMiddleware::class, AdminMiddleware::class]);
 };

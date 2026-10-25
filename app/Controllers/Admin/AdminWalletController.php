@@ -154,18 +154,25 @@ class AdminWalletController {
         $marketId = $request->input('market_id');
         $search = trim((string)$request->input('search', ''));
 
-        // Stats summary
+        // Stats summary with total bets, staked, won payout, lost amount, and winning/losing user counts
         $statsStmt = $pdo->query("
             SELECT 
                 COUNT(*) as total_bets,
                 COALESCE(SUM(wager_amount), 0) as total_staked,
                 COALESCE(SUM(winning_amount), 0) as total_won_payout,
+                COALESCE(SUM(CASE WHEN status = 'LOST' THEN wager_amount ELSE 0 END), 0) as total_lost_amount,
                 SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending_count,
                 SUM(CASE WHEN status = 'WON' THEN 1 ELSE 0 END) as won_count,
-                SUM(CASE WHEN status = 'LOST' THEN 1 ELSE 0 END) as lost_count
+                SUM(CASE WHEN status = 'LOST' THEN 1 ELSE 0 END) as lost_count,
+                COUNT(DISTINCT CASE WHEN status = 'WON' THEN user_id END) as win_users_count,
+                COUNT(DISTINCT CASE WHEN status = 'LOST' THEN user_id END) as loss_users_count,
+                COUNT(DISTINCT CASE WHEN status = 'PENDING' THEN user_id END) as pending_users_count
             FROM demo_wagers
         ");
-        $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+        $stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $totalStakedNum = (int)($stats['total_staked'] ?? 0);
+        $totalWonNum = (int)($stats['total_won_payout'] ?? 0);
+        $stats['house_net_profit'] = $totalStakedNum - $totalWonNum;
 
         $sql = "
             SELECT w.id, w.user_id, u.name as user_name, u.email as user_email, 
@@ -175,10 +182,15 @@ class AdminWalletController {
                    w.wager_amount, w.wager_amount as points_wagered, 
                    w.multiplier, w.potential_win, w.potential_win as potential_win_points, 
                    w.status, w.settlement_status, w.winning_amount, 
-                   w.created_at, w.created_at as placed_at, w.settled_at
+                   w.created_at, w.created_at as placed_at, w.settled_at,
+                   wal.virtual_balance as user_wallet_balance,
+                   r.open_panna as result_open_panna, r.jodi as result_jodi, r.close_panna as result_close_panna,
+                   r.status as result_status
             FROM demo_wagers w
             LEFT JOIN users u ON u.id = w.user_id
+            LEFT JOIN wallets wal ON wal.user_id = w.user_id
             LEFT JOIN markets m ON m.id = w.market_id
+            LEFT JOIN results r ON r.market_id = w.market_id AND r.result_date = DATE(w.created_at)
             WHERE 1=1
         ";
 
@@ -207,6 +219,76 @@ class AdminWalletController {
             'stats' => $stats,
             'wagers' => $wagers,
         ], 'Admin wagers retrieved.');
+    }
+
+    /**
+     * GET /api/admin/wagers/{id}
+     * Full detailed view of a wager with user details, market result match, and audit ledger.
+     */
+    public function showWager(Request $request, string $id): void {
+        $wagerId = (int)$id;
+        $pdo = Database::getConnection();
+
+        $stmt = $pdo->prepare("
+            SELECT w.id, w.user_id, u.name as user_name, u.email as user_email, u.phone as user_phone,
+                   wal.virtual_balance as user_wallet_balance,
+                   w.market_id, COALESCE(m.name, w.market_id) as market_name, 
+                   TIME_FORMAT(m.open_time, '%h:%i %p') as open_time, 
+                   TIME_FORMAT(m.close_time, '%h:%i %p') as close_time, 
+                   m.status as market_status,
+                   w.wager_type, w.wager_type as game_type, 
+                   w.selection, w.selection as bet_number, 
+                   w.wager_amount, w.wager_amount as points_wagered, 
+                   w.multiplier, w.potential_win, w.potential_win as potential_win_points, 
+                   w.status, w.settlement_status, w.winning_amount, 
+                   w.created_at, w.created_at as placed_at, w.settled_at,
+                   r.open_panna as result_open_panna, r.jodi as result_jodi, r.close_panna as result_close_panna,
+                   r.status as result_status, r.published_at as result_published_at
+            FROM demo_wagers w
+            LEFT JOIN users u ON u.id = w.user_id
+            LEFT JOIN wallets wal ON wal.user_id = w.user_id
+            LEFT JOIN markets m ON m.id = w.market_id
+            LEFT JOIN results r ON r.market_id = w.market_id AND r.result_date = DATE(w.created_at)
+            WHERE w.id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $wagerId]);
+        $wager = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$wager) {
+            Response::error("Wager #$wagerId not found.", 404);
+        }
+
+        // Add game explanation / result match analysis
+        $isMatch = false;
+        $analysisExplanation = 'Market result has not been declared yet.';
+        if (!empty($wager['result_jodi']) && $wager['result_jodi'] !== '**') {
+            $sel = trim((string)$wager['selection']);
+            $wt = $wager['wager_type'];
+            if ($wt === 'jodi') {
+                $isMatch = ($sel === $wager['result_jodi']);
+                $analysisExplanation = $isMatch 
+                    ? "User Jodi '$sel' EXACTLY MATCHED declared Jodi '{$wager['result_jodi']}'."
+                    : "User Jodi '$sel' did NOT match declared Jodi '{$wager['result_jodi']}'.";
+            } elseif ($wt === 'single_ank') {
+                $openAnk = substr($wager['result_jodi'], 0, 1);
+                $closeAnk = substr($wager['result_jodi'], 1, 1);
+                $isMatch = ($sel === $openAnk || $sel === $closeAnk);
+                $analysisExplanation = $isMatch 
+                    ? "User Single Ank '$sel' matched declared digit in '{$wager['result_jodi']}'."
+                    : "User Single Ank '$sel' did NOT match open ($openAnk) or close ($closeAnk) digits.";
+            } elseif (in_array($wt, ['single_panna', 'double_panna', 'triple_panna'])) {
+                $isMatch = ($sel === $wager['result_open_panna'] || $sel === $wager['result_close_panna']);
+                $analysisExplanation = $isMatch 
+                    ? "User Panna '$sel' matched declared Panna ({$wager['result_open_panna']} / {$wager['result_close_panna']})."
+                    : "User Panna '$sel' did NOT match open panna ({$wager['result_open_panna']}) or close panna ({$wager['result_close_panna']}).";
+            }
+        }
+
+        $wager['is_result_match'] = $isMatch;
+        $wager['result_explanation'] = $analysisExplanation;
+
+        Response::success($wager, "Wager details retrieved.");
     }
 
     /**

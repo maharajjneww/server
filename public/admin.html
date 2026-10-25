@@ -518,22 +518,36 @@
     <!-- TAB 3: User Wagers (Live) -->
     <div id="tab-wagers" class="tab-pane" style="display:none;">
       <!-- Stats Overview Cards -->
-      <div class="stat-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+      <div class="stat-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom: 20px;">
         <div class="card" style="padding:14px; border-left: 3px solid var(--blue);">
           <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bets Placed</div>
           <div id="stat-total-bets" style="font-size:22px; font-weight:800; color:var(--text-main); margin-top:4px;">0</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Across all markets</div>
         </div>
         <div class="card" style="padding:14px; border-left: 3px solid var(--gold-primary);">
-          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Pts Staked</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bet Amount</div>
           <div id="stat-total-staked" style="font-size:22px; font-weight:800; color:var(--gold-primary); margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Total stake collected</div>
         </div>
         <div class="card" style="padding:14px; border-left: 3px solid var(--success);">
-          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Win Payout</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Win Payout Amount</div>
           <div id="stat-total-won" style="font-size:22px; font-weight:800; color:var(--success); margin-top:4px;">0 pts</div>
+          <div id="stat-win-users" style="font-size:11px; color:var(--text-muted); margin-top:2px;">0 winning users</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--danger);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Loss Amount (House Kept)</div>
+          <div id="stat-total-lost" style="font-size:22px; font-weight:800; color:var(--danger); margin-top:4px;">0 pts</div>
+          <div id="stat-loss-users" style="font-size:11px; color:var(--text-muted); margin-top:2px;">0 losing users</div>
         </div>
         <div class="card" style="padding:14px; border-left: 3px solid #E09612;">
-          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Active Pending Bets</div>
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Active Live Bets</div>
           <div id="stat-pending-bets" style="font-size:22px; font-weight:800; color:#E09612; margin-top:4px;">0</div>
+          <div id="stat-pending-users" style="font-size:11px; color:var(--text-muted); margin-top:2px;">0 active users</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid #8957e5;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">House Net Balance</div>
+          <div id="stat-net-profit" style="font-size:22px; font-weight:800; color:#58a6ff; margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Stake − Won Payout</div>
         </div>
       </div>
 
@@ -1215,7 +1229,25 @@
           if (totalBetsEl) totalBetsEl.innerText = Number(stats.total_bets || 0).toLocaleString();
           if (totalStakedEl) totalStakedEl.innerText = Number(stats.total_staked || 0).toLocaleString() + ' pts';
           if (totalWonEl) totalWonEl.innerText = Number(stats.total_won_payout || 0).toLocaleString() + ' pts';
+
+          const winUsersEl = document.getElementById('stat-win-users');
+          if (winUsersEl) winUsersEl.innerText = `${stats.win_users_count || 0} winning user(s) (${stats.won_count || 0} won)`;
+
+          const totalLostEl = document.getElementById('stat-total-lost');
+          if (totalLostEl) totalLostEl.innerText = Number(stats.total_lost_amount || 0).toLocaleString() + ' pts';
+          const lossUsersEl = document.getElementById('stat-loss-users');
+          if (lossUsersEl) lossUsersEl.innerText = `${stats.loss_users_count || 0} losing user(s) (${stats.lost_count || 0} lost)`;
+
           if (pendingBetsEl) pendingBetsEl.innerText = Number(stats.pending_count || 0).toLocaleString();
+          const pendingUsersEl = document.getElementById('stat-pending-users');
+          if (pendingUsersEl) pendingUsersEl.innerText = `${stats.pending_users_count || 0} user(s) awaiting result`;
+
+          const netProfitEl = document.getElementById('stat-net-profit');
+          if (netProfitEl) {
+            const net = Number(stats.house_net_profit || 0);
+            netProfitEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' pts';
+            netProfitEl.style.color = (net >= 0 ? 'var(--success)' : 'var(--danger)');
+          }
 
           const wagers = Array.isArray(json.data.wagers) ? json.data.wagers : (Array.isArray(json.data) ? json.data : []);
           allLoadedWagers = wagers;
@@ -1224,18 +1256,22 @@
             tbody.innerHTML = '';
             wagers.forEach(w => {
               const tr = document.createElement('tr');
+              tr.style.cursor = 'pointer';
+              tr.setAttribute('onclick', `openBetFullResultModal(${w.id})`);
+              tr.title = 'Click to open full bet result & settlement breakdown';
+
               const statusClass = w.status === 'WON' ? 'badge-won' : (w.status === 'LOST' ? 'badge-lost' : 'badge-pending');
               const wagerPts = Number(w.points_wagered !== undefined ? w.points_wagered : (w.wager_amount || 0)).toLocaleString();
               const winPts = Number(w.potential_win_points !== undefined ? w.potential_win_points : (w.potential_win || 0)).toLocaleString();
 
               tr.innerHTML = `
-                <td class="mono" style="font-size:12px; color:var(--text-muted);">#${w.id}</td>
+                <td class="mono" style="font-size:12px; color:var(--text-muted); font-weight:700;">#${w.id}</td>
                 <td style="font-size:11px; color:var(--text-muted);">${w.placed_at || w.created_at || '-'}</td>
                 <td>
                   <div style="font-weight:600; color:var(--text-main);">${w.user_name || 'User #' + w.user_id}</div>
                   <div style="font-size:11px; color:var(--text-muted);">${w.user_email || ''}</div>
                 </td>
-                <td style="font-weight:600;">${w.market_name || w.market_id}</td>
+                <td style="font-weight:600; color:var(--gold-primary);">${w.market_name || w.market_id}</td>
                 <td><span class="badge" style="background:#161B22; border:1px solid #30363D; font-size:11px;">${w.game_type || w.wager_type}</span></td>
                 <td class="mono" style="font-weight:800; font-size:14px; color:var(--gold-primary);">${w.bet_number || w.selection}</td>
                 <td class="mono" style="font-weight:600;">${wagerPts} pts</td>
@@ -1243,7 +1279,10 @@
                 <td><span class="badge ${statusClass}">${w.status}</span></td>
                 <td style="font-size:11px; color:var(--text-muted);">${w.settled_at || (w.status === 'PENDING' ? '⏳ Awaiting Result' : '-')}</td>
                 <td>
-                  <button class="btn-action" style="background:#1f6feb; color:#fff;" onclick="openEditWagerModal(${w.id})">✏️ Edit</button>
+                  <div style="display:flex; gap:6px;">
+                    <button class="btn-action" style="background:#238636; color:#fff;" onclick="event.stopPropagation(); openBetFullResultModal(${w.id})" title="View full result breakdown">🔍 Full Result</button>
+                    <button class="btn-action" style="background:#1f6feb; color:#fff;" onclick="event.stopPropagation(); openEditWagerModal(${w.id})" title="Edit bet">✏️ Edit</button>
+                  </div>
                 </td>
               `;
               tbody.appendChild(tr);
@@ -1688,5 +1727,225 @@
       </form>
     </div>
   </div>
+  <!-- Modal: Full Bet Result & Breakdown Inspector -->
+  <div id="bet-full-result-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(6px); padding:20px; overflow-y:auto;">
+    <div class="card" style="width:100%; max-width:680px; margin:auto; box-shadow:0 16px 48px rgba(0,0,0,0.9); border:1px solid var(--card-border); max-height:90vh; display:flex; flex-direction:column;">
+      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding:16px 20px;">
+        <div class="card-title" style="font-size:18px; display:flex; align-items:center; gap:8px;">
+          <span>🎯</span> Full Bet Result & Settlement Inspector <span id="full-modal-wager-id" style="color:var(--gold-primary);">#--</span>
+        </div>
+        <button type="button" class="btn-action" onclick="closeBetFullResultModal()" style="padding:4px 10px; font-size:15px;">✕</button>
+      </div>
+
+      <div style="padding:20px; overflow-y:auto; flex:1;">
+        <!-- Verdict Banner -->
+        <div id="full-modal-verdict-banner" style="padding:14px 18px; border-radius:8px; margin-bottom:18px; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between;">
+          <div id="full-modal-verdict-text">Verifying...</div>
+          <span id="full-modal-verdict-badge" class="badge">--</span>
+        </div>
+
+        <!-- Market & Official Result Banner -->
+        <div style="background:#0D1117; border:1px solid var(--card-border); border-radius:8px; padding:16px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market</span>
+              <div id="full-modal-market-name" style="font-size:18px; font-weight:800; color:var(--gold-primary);">--</div>
+              <div id="full-modal-market-timing" style="font-size:11px; color:var(--text-muted);">--</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market Declared Result</span>
+              <div id="full-modal-market-result" class="mono" style="font-size:20px; font-weight:800; color:var(--text-main); letter-spacing:1px; margin-top:2px;">*** - ** - ***</div>
+              <span id="full-modal-result-status" class="badge" style="margin-top:4px;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Info Grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+          <!-- Left: Bet Specs -->
+          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+              🎲 Wager Specifications
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Game Type:</span>
+              <strong id="full-modal-game-type" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Selected Pick:</span>
+              <strong id="full-modal-pick-number" class="mono" style="font-size:16px; color:var(--gold-primary);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Points Staked:</span>
+              <strong id="full-modal-staked" class="mono" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Payout Multiplier:</span>
+              <strong id="full-modal-multiplier" class="mono" style="color:var(--blue);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px;">
+              <span style="color:var(--text-muted);">Potential Payout:</span>
+              <strong id="full-modal-potential" class="mono" style="color:var(--success);">--</strong>
+            </div>
+          </div>
+
+          <!-- Right: User & Settlement Details -->
+          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+              👤 User & Settlement
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">User:</span>
+              <strong id="full-modal-user-name" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
+              <span style="color:var(--text-muted);">Email:</span>
+              <span id="full-modal-user-email" style="color:var(--text-muted);">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Wallet Balance:</span>
+              <strong id="full-modal-user-balance" class="mono" style="color:var(--gold-primary);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Actual Payout:</span>
+              <strong id="full-modal-settled-payout" class="mono">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;">
+              <span style="color:var(--text-muted);">Settled At:</span>
+              <span id="full-modal-settled-time" class="mono" style="color:var(--text-muted);">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matka Math / Rule Explanation Box -->
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px;">
+            📐 Matka Math Verification & Rule Explanation:
+          </div>
+          <div id="full-modal-math-explanation" style="font-size:13px; color:var(--text-main); line-height:1.5;">
+            --
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Action Buttons -->
+      <div style="border-top:1px solid var(--card-border); padding:14px 20px; display:flex; justify-content:space-between; align-items:center; background:#11161D;">
+        <button type="button" class="btn-action" style="background:#1f6feb; color:#fff;" onclick="editFromFullResultModal()">✏️ Edit Bet Parameters</button>
+        <button type="button" class="btn-action" onclick="closeBetFullResultModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFullResultWager = null;
+
+    async function openBetFullResultModal(id) {
+      try {
+        const res = await fetch(`${API_BASE}/admin/wagers/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (!json.success || !json.data) {
+          showAlert(json.message || 'Wager not found.', false);
+          return;
+        }
+
+        const w = json.data;
+        currentFullResultWager = w;
+
+        document.getElementById('full-modal-wager-id').innerText = '#' + w.id;
+        document.getElementById('full-modal-market-name').innerText = w.market_name || w.market_id;
+        document.getElementById('full-modal-market-timing').innerText = (w.open_time && w.close_time) ? `${w.open_time} - ${w.close_time}` : '';
+
+        // Market Result
+        const hasResult = (w.result_open_panna && w.result_open_panna !== '***') || (w.result_jodi && w.result_jodi !== '**');
+        const resDigits = hasResult 
+          ? `${w.result_open_panna || '***'} - ${w.result_jodi || '**'} - ${w.result_close_panna || '***'}`
+          : '*** - ** - *** (Pending)';
+        document.getElementById('full-modal-market-result').innerText = resDigits;
+
+        const resStatusBadge = document.getElementById('full-modal-result-status');
+        resStatusBadge.innerText = w.result_status ? w.result_status.toUpperCase() : 'PENDING';
+        resStatusBadge.className = 'badge ' + (w.result_status === 'published' ? 'badge-published' : 'badge-queued');
+
+        // Verdict Banner
+        const banner = document.getElementById('full-modal-verdict-banner');
+        const verdictText = document.getElementById('full-modal-verdict-text');
+        const verdictBadge = document.getElementById('full-modal-verdict-badge');
+
+        const wagerPts = Number(w.points_wagered !== undefined ? w.points_wagered : w.wager_amount).toLocaleString();
+        const winPts = Number(w.potential_win_points || w.potential_win).toLocaleString();
+
+        if (w.status === 'WON') {
+          banner.style.background = 'rgba(46, 160, 67, 0.15)';
+          banner.style.border = '1px solid rgba(46, 160, 67, 0.4)';
+          banner.style.color = '#3fb950';
+          verdictText.innerHTML = `🏆 <strong>WINNER!</strong> Bet matched official market result. Payout of <strong>${Number(w.winning_amount).toLocaleString()} pts</strong> credited to user.`;
+          verdictBadge.className = 'badge badge-won';
+          verdictBadge.innerText = 'WON';
+        } else if (w.status === 'LOST') {
+          banner.style.background = 'rgba(248, 81, 73, 0.12)';
+          banner.style.border = '1px solid rgba(248, 81, 73, 0.3)';
+          banner.style.color = '#f85149';
+          verdictText.innerHTML = `❌ <strong>LOST:</strong> Bet pick #${w.selection} did not match result. Staked <strong>${wagerPts} pts</strong> retained by house.`;
+          verdictBadge.className = 'badge badge-lost';
+          verdictBadge.innerText = 'LOST';
+        } else if (w.status === 'PENDING') {
+          banner.style.background = 'rgba(210, 153, 34, 0.15)';
+          banner.style.border = '1px solid rgba(210, 153, 34, 0.4)';
+          banner.style.color = '#d29922';
+          verdictText.innerHTML = `⏳ <strong>ACTIVE / PENDING:</strong> Awaiting market result declaration. Potential payout: <strong>${winPts} pts</strong>.`;
+          verdictBadge.className = 'badge badge-pending';
+          verdictBadge.innerText = 'PENDING RESULT';
+        } else {
+          banner.style.background = 'rgba(139, 148, 158, 0.15)';
+          banner.style.border = '1px solid rgba(139, 148, 158, 0.3)';
+          banner.style.color = '#8b949e';
+          verdictText.innerHTML = `🚫 <strong>CANCELLED:</strong> Stake refunded to user.`;
+          verdictBadge.className = 'badge';
+          verdictBadge.innerText = w.status;
+        }
+
+        // Specs
+        document.getElementById('full-modal-game-type').innerText = (w.game_type || w.wager_type || '').toUpperCase();
+        document.getElementById('full-modal-pick-number').innerText = w.selection || w.bet_number;
+        document.getElementById('full-modal-staked').innerText = `${wagerPts} pts`;
+        document.getElementById('full-modal-multiplier').innerText = `${w.multiplier}x`;
+        document.getElementById('full-modal-potential').innerText = `${winPts} pts`;
+
+        // User & Settlement
+        document.getElementById('full-modal-user-name').innerText = w.user_name || 'User #' + w.user_id;
+        document.getElementById('full-modal-user-email').innerText = w.user_email || '-';
+        document.getElementById('full-modal-user-balance').innerText = w.user_wallet_balance !== undefined ? `${Number(w.user_wallet_balance).toLocaleString()} pts` : '-';
+
+        const settledPayoutEl = document.getElementById('full-modal-settled-payout');
+        settledPayoutEl.innerText = `${Number(w.winning_amount || 0).toLocaleString()} pts`;
+        settledPayoutEl.style.color = w.status === 'WON' ? 'var(--success)' : (w.status === 'LOST' ? 'var(--text-muted)' : 'var(--gold-primary)');
+        document.getElementById('full-modal-settled-time').innerText = w.settled_at || (w.status === 'PENDING' ? 'Pending Result Declaration' : '-');
+
+        // Math Explanation
+        document.getElementById('full-modal-math-explanation').innerText = w.result_explanation || 'No rule explanation available.';
+
+        // Show modal
+        const modal = document.getElementById('bet-full-result-modal');
+        modal.style.display = 'flex';
+      } catch (err) {
+        showAlert('Failed to load bet details: ' + err.message, false);
+      }
+    }
+
+    function closeBetFullResultModal() {
+      const modal = document.getElementById('bet-full-result-modal');
+      modal.style.display = 'none';
+      currentFullResultWager = null;
+    }
+
+    function editFromFullResultModal() {
+      if (!currentFullResultWager) return;
+      const wid = currentFullResultWager.id;
+      closeBetFullResultModal();
+      openEditWagerModal(wid);
+    }
+  </script>
 </body>
 </html>
