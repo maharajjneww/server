@@ -22,6 +22,8 @@ spl_autoload_register(function ($class) {
     }
 });
 
+\App\Core\Database::loadEnv();
+
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Router;

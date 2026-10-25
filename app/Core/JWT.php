@@ -4,6 +4,7 @@ namespace App\Core;
 
 class JWT {
     public static function generate(array $payload, int $ttlSeconds = 2592000): string {
+        Database::loadEnv();
         $config = require __DIR__ . '/../../config/jwt.php';
 
         $header = [
@@ -25,6 +26,7 @@ class JWT {
     }
 
     public static function verify(string $token): ?array {
+        Database::loadEnv();
         $config = require __DIR__ . '/../../config/jwt.php';
 
         $parts = explode('.', $token);
