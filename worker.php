@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+date_default_timezone_set('Asia/Kolkata');
+
 // CLI Check
 if (php_sapi_name() !== 'cli') {
     die("Access denied: Worker can only be executed via CLI.\n");

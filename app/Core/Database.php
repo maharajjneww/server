@@ -23,12 +23,14 @@ class Database {
             );
 
             try {
+                date_default_timezone_set('Asia/Kolkata');
                 self::$instance = new PDO(
                     $dsn,
                     $mysql['username'],
                     $mysql['password'],
                     $mysql['options']
                 );
+                self::$instance->exec("SET time_zone = '+05:30'");
             } catch (PDOException $e) {
                 // In production, never expose raw DB credentials
                 throw new \RuntimeException('Database connection failure: ' . $e->getMessage());

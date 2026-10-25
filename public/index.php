@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+date_default_timezone_set('Asia/Kolkata');
+
 // PSR-4 Autoloader
 spl_autoload_register(function ($class) {
     $prefix = 'App\\';
