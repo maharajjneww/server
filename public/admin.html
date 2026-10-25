@@ -543,8 +543,8 @@
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; flex:1;">
             <input type="text" id="wager-search" placeholder="Search user, email, pick..." oninput="debounceLoadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:200px;">
             <select id="wager-status-filter" onchange="loadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">PENDING Only</option>
+              <option value="PENDING" selected>Active Live Bets (Before Result)</option>
+              <option value="ALL">All Statuses (Live & Settled)</option>
               <option value="WON">WON Only</option>
               <option value="LOST">LOST Only</option>
             </select>
@@ -1190,7 +1190,7 @@
     async function loadWagers() {
       const tbody = document.getElementById('wagers-table-body');
       const search = (document.getElementById('wager-search')?.value || '').trim();
-      const status = document.getElementById('wager-status-filter')?.value || 'ALL';
+      const status = document.getElementById('wager-status-filter')?.value || 'PENDING';
       const marketId = document.getElementById('wager-market-filter')?.value || 'ALL';
 
       const queryParams = new URLSearchParams();
@@ -1249,7 +1249,12 @@
               tbody.appendChild(tr);
             });
           } else {
-            tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No user wagers match the selected filters.</td></tr>';
+            const isPending = (status === 'PENDING');
+            tbody.innerHTML = `<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">
+              ${isPending 
+                ? 'No active pending bets waiting for result declaration. (Switch filter to "All Statuses" to view settled bets).'
+                : 'No user wagers match the selected filters.'}
+            </td></tr>`;
           }
         } else {
           tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No user bets recorded yet.</td></tr>';
