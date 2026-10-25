@@ -33,7 +33,14 @@ INSERT INTO `markets` (`id`, `name`, `open_time`, `close_time`, `status`, `is_fe
 ('mkt_sridevi', 'SRIDEVI', '11:35:00', '12:35:00', 'closed', 1, 5, 1, 13),
 ('mkt_madhuri', 'MADHURI', '11:45:00', '12:45:00', 'closed', 0, 5, 1, 14),
 ('mkt_kalyan_morning', 'KALYAN MORNING', '11:59:00', '12:59:00', 'closed', 1, 5, 1, 15),
-('mkt_maharani', 'MAHARANI', '12:15:00', '14:15:00', 'closed', 0, 5, 1, 16)
+('mkt_maharani', 'MAHARANI', '12:15:00', '14:15:00', 'closed', 0, 5, 1, 16),
+('mkt_padmavathi', 'PADMAVATHI', '11:40:00', '12:40:00', 'closed', 0, 5, 1, 17),
+('mkt_madhur_morning', 'MADHUR MORNING', '11:30:00', '12:30:00', 'closed', 1, 5, 1, 18),
+('mkt_new_time_bazar', 'NEW TIME BAZAR', '13:00:00', '14:00:00', 'running', 1, 5, 1, 19),
+('mkt_main_sridevi_day', 'MAIN SRIDEVI DAY', '13:05:00', '14:05:00', 'running', 1, 5, 1, 20),
+('mkt_sunday_bazar', 'SUNDAY BAZAR', '13:00:00', '15:00:00', 'running', 1, 5, 1, 21),
+('mkt_super_day', 'SUPER DAY', '13:10:00', '14:15:00', 'running', 0, 5, 1, 22),
+('mkt_prabhat', 'PRABHAT', '13:25:00', '15:05:00', 'running', 0, 5, 1, 23)
 ON DUPLICATE KEY UPDATE 
     `open_time` = VALUES(`open_time`),
     `close_time` = VALUES(`close_time`),

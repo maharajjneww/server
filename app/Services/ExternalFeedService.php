@@ -25,6 +25,13 @@ class ExternalFeedService {
         'MAIN BAZAR' => 'mkt_main_bazar',
         'MILAN NIGHT' => 'mkt_milan_night',
         'SUPREME NIGHT' => 'mkt_supreme_night',
+        'SUNDAY BAZAR' => 'mkt_sunday_bazar',
+        'MAIN SRIDEVI DAY' => 'mkt_main_sridevi_day',
+        'NEW TIME BAZAR' => 'mkt_new_time_bazar',
+        'PADMAVATHI' => 'mkt_padmavathi',
+        'MADHUR MORNING' => 'mkt_madhur_morning',
+        'PRABHAT' => 'mkt_prabhat',
+        'SUPER DAY' => 'mkt_super_day',
     ];
 
     /**
