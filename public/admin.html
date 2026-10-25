@@ -751,7 +751,8 @@
             </div>
             <div class="form-group">
               <label>Points to Add (+) or Deduct (-)</label>
-              <input type="number" id="adjust-amount" placeholder="e.g. 5000 or -2000" required>
+              <input type="number" id="adjust-amount" placeholder="e.g. 5000 or -2000" required oninput="onAdjustAmountChange()">
+              <div id="adjust-preview" style="font-size:12px; margin-top:5px; font-weight:600; display:none;"></div>
             </div>
             <div class="form-group">
               <label>Reason / Audit Note</label>
@@ -1324,18 +1325,43 @@
       } catch (e) { console.error(e); }
     }
 
+    function onAdjustAmountChange() {
+      const val = parseInt(document.getElementById('adjust-amount').value, 10);
+      const preview = document.getElementById('adjust-preview');
+      if (isNaN(val) || val === 0) {
+        preview.style.display = 'none';
+        return;
+      }
+      preview.style.display = 'block';
+      if (val > 0) {
+        preview.style.color = 'var(--success)';
+        preview.innerText = `➕ Will CREDIT (Add) +${val.toLocaleString()} points to user's wallet`;
+      } else {
+        preview.style.color = 'var(--danger)';
+        preview.innerText = `➖ Will DEBIT (Deduct) -${Math.abs(val).toLocaleString()} points from user's wallet`;
+      }
+    }
+
     // Adjust Points Form
     document.getElementById('adjust-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const user_id = document.getElementById('wallet-user-select').value;
-      const points = parseInt(document.getElementById('adjust-amount').value);
+      const rawPoints = parseInt(document.getElementById('adjust-amount').value, 10);
       const reason = document.getElementById('adjust-reason').value.trim();
+
+      if (isNaN(rawPoints) || rawPoints === 0) {
+        showAlert('Please enter a non-zero number of points (+ to credit, - to deduct).', false);
+        return;
+      }
+
+      const operation = rawPoints < 0 ? 'DEBIT' : 'CREDIT';
+      const amount = Math.abs(rawPoints);
 
       try {
         const res = await fetch(`${API_BASE}/admin/wallet-adjustment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ user_id, amount: points, points, operation: 'CREDIT', reason })
+          body: JSON.stringify({ user_id, amount, operation, reason })
         });
         const data = await res.json();
         if (data.success) {
@@ -1343,6 +1369,7 @@
           loadWallets();
           document.getElementById('adjust-amount').value = '';
           document.getElementById('adjust-reason').value = '';
+          document.getElementById('adjust-preview').style.display = 'none';
         } else {
           showAlert(data.message || 'Error adjusting wallet', false);
         }

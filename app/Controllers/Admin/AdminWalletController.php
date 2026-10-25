@@ -67,17 +67,30 @@ class AdminWalletController {
     public function adjustPoints(Request $request): void {
         $admin = $request->getUser();
         $userId = (int)$request->input('user_id', 0);
-        $amount = (int)$request->input('amount', 0);
-        $operation = (string)$request->input('operation', 'CREDIT');
-        $reason = (string)$request->input('reason', '');
+        $rawAmount = (int)$request->input('amount', 0);
+        if ($rawAmount === 0) {
+            $rawAmount = (int)$request->input('points', 0);
+        }
+        $reqOp = strtoupper(trim((string)$request->input('operation', '')));
+        $reason = trim((string)$request->input('reason', ''));
+
+        // If amount is negative, automatically treat as DEBIT
+        if ($rawAmount < 0) {
+            $amount = abs($rawAmount);
+            $operation = 'DEBIT';
+        } else {
+            $amount = $rawAmount;
+            $operation = ($reqOp === 'DEBIT') ? 'DEBIT' : 'CREDIT';
+        }
 
         if ($userId <= 0 || $amount <= 0 || empty($reason)) {
-            Response::error('user_id, positive amount, and reason are required.', 422);
+            Response::error('user_id, a non-zero amount, and a reason are required.', 422);
         }
 
         try {
-            $res = WalletService::adminAdjustPoints($userId, $amount, $operation, $reason, (int)$admin['sub']);
-            Response::success($res, 'Admin point adjustment completed.');
+            $res = WalletService::adminAdjustPoints($userId, $amount, $operation, $reason, (int)($admin ? $admin['sub'] : 1));
+            $actionWord = ($operation === 'DEBIT') ? 'deducted from' : 'credited to';
+            Response::success($res, "Successfully $actionWord user wallet: " . ($operation === 'DEBIT' ? "-$amount" : "+$amount") . " pts.");
         } catch (Exception $e) {
             Response::error($e->getMessage(), 422);
         }
