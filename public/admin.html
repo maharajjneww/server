@@ -871,6 +871,195 @@
 
   </div>
 
+  <!-- Modal: Edit User Bet -->
+  <div id="edit-wager-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div class="card" style="width:100%; max-width:540px; margin:20px; box-shadow:0 12px 40px rgba(0,0,0,0.8); border:1px solid var(--card-border);">
+      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding-bottom:12px;">
+        <div class="card-title" style="font-size:18px;">
+          <span>✏️</span> Edit User Wager <span id="modal-wager-id" style="color:var(--gold-primary);">#--</span>
+        </div>
+        <button type="button" class="btn-action" onclick="closeEditWagerModal()" style="padding:4px 8px; font-size:14px;">✕</button>
+      </div>
+
+      <form id="edit-wager-form" onsubmit="submitEditWager(event)" style="margin-top:14px;">
+        <!-- User & Market Info Badge -->
+        <div style="background:#0D1117; padding:12px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:16px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="color:var(--text-muted);">User:</span>
+            <strong id="modal-user-display" style="color:var(--text-main);">User</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="color:var(--text-muted);">Market:</span>
+            <strong id="modal-market-display" style="color:var(--gold-primary);">Market</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-muted);">Placed At:</span>
+            <span id="modal-placed-at" class="mono" style="color:var(--text-muted);">Time</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Game Type</label>
+          <select id="modal-wager-type" onchange="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+            <option value="single_ank">Single Ank (1 Digit, 9x)</option>
+            <option value="jodi">Jodi (2 Digits, 90x)</option>
+            <option value="single_panna">Single Panna (3 Digits, 140x)</option>
+            <option value="double_panna">Double Panna (3 Digits, 280x)</option>
+            <option value="triple_panna">Triple Panna (3 Digits, 600x)</option>
+          </select>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Pick Number / Selection</label>
+            <input type="text" id="modal-selection" required style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--gold-primary); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Wager Points</label>
+            <input type="number" id="modal-amount" min="1" required oninput="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
+          </div>
+        </div>
+
+        <div style="background:rgba(46, 160, 67, 0.08); padding:10px 14px; border-radius:6px; border:1px solid rgba(46, 160, 67, 0.2); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:var(--text-muted);">Calculated Potential Win:</span>
+          <span id="modal-potential-display" class="mono" style="font-weight:800; color:var(--success); font-size:15px;">0 pts</span>
+        </div>
+
+        <div class="form-group">
+          <label>Wager Status</label>
+          <select id="modal-status" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+            <option value="PENDING">PENDING (Active in Market)</option>
+            <option value="WON">WON (Force Win & Credit Payout to User)</option>
+            <option value="LOST">LOST (Mark as Lost)</option>
+            <option value="CANCELLED">CANCELLED (Refund Stake Points to User Wallet)</option>
+          </select>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+            * Selecting CANCELLED refunds staked points to user wallet. Selecting WON credits winning payout.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Admin Note / Reason (for audit log)</label>
+          <input type="text" id="modal-admin-note" placeholder="e.g. Corrected selection as requested by user (optional)" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-action" onclick="closeEditWagerModal()">Cancel</button>
+          <button type="submit" id="modal-save-btn" class="btn-action btn-success" style="padding:8px 18px; font-weight:700;">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Full Bet Result & Breakdown Inspector -->
+  <div id="bet-full-result-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(6px); padding:20px; overflow-y:auto;">
+    <div class="card" style="width:100%; max-width:680px; margin:auto; box-shadow:0 16px 48px rgba(0,0,0,0.9); border:1px solid var(--card-border); max-height:90vh; display:flex; flex-direction:column;">
+      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding:16px 20px;">
+        <div class="card-title" style="font-size:18px; display:flex; align-items:center; gap:8px;">
+          <span>🎯</span> Full Bet Result & Settlement Inspector <span id="full-modal-wager-id" style="color:var(--gold-primary);">#--</span>
+        </div>
+        <button type="button" class="btn-action" onclick="closeBetFullResultModal()" style="padding:4px 10px; font-size:15px;">✕</button>
+      </div>
+
+      <div style="padding:20px; overflow-y:auto; flex:1;">
+        <!-- Verdict Banner -->
+        <div id="full-modal-verdict-banner" style="padding:14px 18px; border-radius:8px; margin-bottom:18px; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between;">
+          <div id="full-modal-verdict-text">Verifying...</div>
+          <span id="full-modal-verdict-badge" class="badge">--</span>
+        </div>
+
+        <!-- Market & Official Result Banner -->
+        <div style="background:#0D1117; border:1px solid var(--card-border); border-radius:8px; padding:16px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market</span>
+              <div id="full-modal-market-name" style="font-size:18px; font-weight:800; color:var(--gold-primary);">--</div>
+              <div id="full-modal-market-timing" style="font-size:11px; color:var(--text-muted);">--</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market Declared Result</span>
+              <div id="full-modal-market-result" class="mono" style="font-size:20px; font-weight:800; color:var(--text-main); letter-spacing:1px; margin-top:2px;">*** - ** - ***</div>
+              <span id="full-modal-result-status" class="badge" style="margin-top:4px;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Info Grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+          <!-- Left: Bet Specs -->
+          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+              🎲 Wager Specifications
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Game Type:</span>
+              <strong id="full-modal-game-type" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Selected Pick:</span>
+              <strong id="full-modal-pick-number" class="mono" style="font-size:16px; color:var(--gold-primary);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Points Staked:</span>
+              <strong id="full-modal-staked" class="mono" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Payout Multiplier:</span>
+              <strong id="full-modal-multiplier" class="mono" style="color:var(--blue);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px;">
+              <span style="color:var(--text-muted);">Potential Payout:</span>
+              <strong id="full-modal-potential" class="mono" style="color:var(--success);">--</strong>
+            </div>
+          </div>
+
+          <!-- Right: User & Settlement Details -->
+          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+              👤 User & Settlement
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">User:</span>
+              <strong id="full-modal-user-name" style="color:var(--text-main);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
+              <span style="color:var(--text-muted);">Email:</span>
+              <span id="full-modal-user-email" style="color:var(--text-muted);">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Wallet Balance:</span>
+              <strong id="full-modal-user-balance" class="mono" style="color:var(--gold-primary);">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+              <span style="color:var(--text-muted);">Actual Payout:</span>
+              <strong id="full-modal-settled-payout" class="mono">--</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;">
+              <span style="color:var(--text-muted);">Settled At:</span>
+              <span id="full-modal-settled-time" class="mono" style="color:var(--text-muted);">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matka Math / Rule Explanation Box -->
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px;">
+            📐 Matka Math Verification & Rule Explanation:
+          </div>
+          <div id="full-modal-math-explanation" style="font-size:13px; color:var(--text-main); line-height:1.5;">
+            --
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Action Buttons -->
+      <div style="border-top:1px solid var(--card-border); padding:14px 20px; display:flex; justify-content:space-between; align-items:center; background:#11161D;">
+        <button type="button" class="btn-action" style="background:#1f6feb; color:#fff;" onclick="editFromFullResultModal()">✏️ Edit Bet Parameters</button>
+        <button type="button" class="btn-action" onclick="closeBetFullResultModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let token = localStorage.getItem('admin_token') || '';
     const API_BASE = '/api';
@@ -2044,19 +2233,28 @@
       document.getElementById('modal-potential-display').innerText = `${potential.toLocaleString()} pts (${mult}x multiplier)`;
     }
 
-    document.getElementById('edit-wager-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function submitEditWager(e) {
+      if (e) e.preventDefault();
       if (!currentEditingWagerId) return;
 
       const wager_type = document.getElementById('modal-wager-type').value;
       const selection = document.getElementById('modal-selection').value.trim();
       const wager_amount = parseInt(document.getElementById('modal-amount').value, 10);
       const status = document.getElementById('modal-status').value;
-      const admin_note = document.getElementById('modal-admin-note').value.trim();
+      const noteInput = document.getElementById('modal-admin-note');
+      const admin_note = (noteInput && noteInput.value.trim()) ? noteInput.value.trim() : 'Admin modified bet via panel';
 
       if (!selection || isNaN(wager_amount) || wager_amount <= 0) {
         showAlert('Please provide a valid selection and positive wager points.', false);
         return;
+      }
+
+      const saveBtn = document.getElementById('modal-save-btn');
+      let originalBtnText = '';
+      if (saveBtn) {
+        originalBtnText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
       }
 
       try {
@@ -2073,8 +2271,11 @@
           showAlert(data.message || `Wager #${currentEditingWagerId} updated successfully.`);
           closeEditWagerModal();
           loadWagers();
+          if (typeof loadMarketSummaries === 'function') {
+            loadMarketSummaries();
+          }
           const analysisTab = document.getElementById('tab-analysis');
-          if (analysisTab && analysisTab.style.display !== 'none') {
+          if (analysisTab && analysisTab.style.display !== 'none' && typeof loadBetAnalysis === 'function') {
             loadBetAnalysis();
           }
         } else {
@@ -2082,202 +2283,14 @@
         }
       } catch (err) {
         showAlert('Network or API error: ' + err.message, false);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalBtnText || '💾 Save Changes';
+        }
       }
-    });
+    }
 
-    // Start
-    checkAuth();
-  </script>
-
-  <!-- Modal: Edit User Bet -->
-  <div id="edit-wager-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-    <div class="card" style="width:100%; max-width:540px; margin:20px; box-shadow:0 12px 40px rgba(0,0,0,0.8); border:1px solid var(--card-border);">
-      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding-bottom:12px;">
-        <div class="card-title" style="font-size:18px;">
-          <span>✏️</span> Edit User Wager <span id="modal-wager-id" style="color:var(--gold-primary);">#--</span>
-        </div>
-        <button type="button" class="btn-action" onclick="closeEditWagerModal()" style="padding:4px 8px; font-size:14px;">✕</button>
-      </div>
-
-      <form id="edit-wager-form" style="margin-top:14px;">
-        <!-- User & Market Info Badge -->
-        <div style="background:#0D1117; padding:12px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:16px; font-size:12px;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span style="color:var(--text-muted);">User:</span>
-            <strong id="modal-user-display" style="color:var(--text-main);">User</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span style="color:var(--text-muted);">Market:</span>
-            <strong id="modal-market-display" style="color:var(--gold-primary);">Market</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--text-muted);">Placed At:</span>
-            <span id="modal-placed-at" class="mono" style="color:var(--text-muted);">Time</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Game Type</label>
-          <select id="modal-wager-type" onchange="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
-            <option value="single_ank">Single Ank (1 Digit, 9x)</option>
-            <option value="jodi">Jodi (2 Digits, 90x)</option>
-            <option value="single_panna">Single Panna (3 Digits, 140x)</option>
-            <option value="double_panna">Double Panna (3 Digits, 280x)</option>
-            <option value="triple_panna">Triple Panna (3 Digits, 600x)</option>
-          </select>
-        </div>
-
-        <div class="grid-2" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>Pick Number / Selection</label>
-            <input type="text" id="modal-selection" required style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--gold-primary); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
-          </div>
-          <div class="form-group">
-            <label>Wager Points</label>
-            <input type="number" id="modal-amount" min="1" required oninput="onModalTypeOrAmountChange()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); font-family:monospace; font-weight:700; font-size:16px; border-radius:6px; width:100%;">
-          </div>
-        </div>
-
-        <div style="background:rgba(46, 160, 67, 0.08); padding:10px 14px; border-radius:6px; border:1px solid rgba(46, 160, 67, 0.2); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:12px; color:var(--text-muted);">Calculated Potential Win:</span>
-          <span id="modal-potential-display" class="mono" style="font-weight:800; color:var(--success); font-size:15px;">0 pts</span>
-        </div>
-
-        <div class="form-group">
-          <label>Wager Status</label>
-          <select id="modal-status" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
-            <option value="PENDING">PENDING (Active in Market)</option>
-            <option value="WON">WON (Force Win & Credit Payout to User)</option>
-            <option value="LOST">LOST (Mark as Lost)</option>
-            <option value="CANCELLED">CANCELLED (Refund Stake Points to User Wallet)</option>
-          </select>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-            * Selecting CANCELLED refunds staked points to user wallet. Selecting WON credits winning payout.
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Admin Note / Reason (for audit log)</label>
-          <input type="text" id="modal-admin-note" placeholder="e.g. Corrected selection as requested by user" required style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; width:100%;">
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-          <button type="button" class="btn-action" onclick="closeEditWagerModal()">Cancel</button>
-          <button type="submit" class="btn-action btn-success" style="padding:8px 18px; font-weight:700;">💾 Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <!-- Modal: Full Bet Result & Breakdown Inspector -->
-  <div id="bet-full-result-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(6px); padding:20px; overflow-y:auto;">
-    <div class="card" style="width:100%; max-width:680px; margin:auto; box-shadow:0 16px 48px rgba(0,0,0,0.9); border:1px solid var(--card-border); max-height:90vh; display:flex; flex-direction:column;">
-      <div class="card-header" style="border-bottom:1px solid var(--card-border); padding:16px 20px;">
-        <div class="card-title" style="font-size:18px; display:flex; align-items:center; gap:8px;">
-          <span>🎯</span> Full Bet Result & Settlement Inspector <span id="full-modal-wager-id" style="color:var(--gold-primary);">#--</span>
-        </div>
-        <button type="button" class="btn-action" onclick="closeBetFullResultModal()" style="padding:4px 10px; font-size:15px;">✕</button>
-      </div>
-
-      <div style="padding:20px; overflow-y:auto; flex:1;">
-        <!-- Verdict Banner -->
-        <div id="full-modal-verdict-banner" style="padding:14px 18px; border-radius:8px; margin-bottom:18px; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between;">
-          <div id="full-modal-verdict-text">Verifying...</div>
-          <span id="full-modal-verdict-badge" class="badge">--</span>
-        </div>
-
-        <!-- Market & Official Result Banner -->
-        <div style="background:#0D1117; border:1px solid var(--card-border); border-radius:8px; padding:16px; margin-bottom:18px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market</span>
-              <div id="full-modal-market-name" style="font-size:18px; font-weight:800; color:var(--gold-primary);">--</div>
-              <div id="full-modal-market-timing" style="font-size:11px; color:var(--text-muted);">--</div>
-            </div>
-            <div style="text-align:right;">
-              <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Market Declared Result</span>
-              <div id="full-modal-market-result" class="mono" style="font-size:20px; font-weight:800; color:var(--text-main); letter-spacing:1px; margin-top:2px;">*** - ** - ***</div>
-              <span id="full-modal-result-status" class="badge" style="margin-top:4px;">--</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2-Column Info Grid -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
-          <!-- Left: Bet Specs -->
-          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
-              🎲 Wager Specifications
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Game Type:</span>
-              <strong id="full-modal-game-type" style="color:var(--text-main);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Selected Pick:</span>
-              <strong id="full-modal-pick-number" class="mono" style="font-size:16px; color:var(--gold-primary);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Points Staked:</span>
-              <strong id="full-modal-staked" class="mono" style="color:var(--text-main);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Payout Multiplier:</span>
-              <strong id="full-modal-multiplier" class="mono" style="color:var(--blue);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:13px;">
-              <span style="color:var(--text-muted);">Potential Payout:</span>
-              <strong id="full-modal-potential" class="mono" style="color:var(--success);">--</strong>
-            </div>
-          </div>
-
-          <!-- Right: User & Settlement Details -->
-          <div style="background:#11161D; border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-            <div style="font-size:12px; font-weight:700; color:var(--gold-primary); text-transform:uppercase; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
-              👤 User & Settlement
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">User:</span>
-              <strong id="full-modal-user-name" style="color:var(--text-main);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
-              <span style="color:var(--text-muted);">Email:</span>
-              <span id="full-modal-user-email" style="color:var(--text-muted);">--</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Wallet Balance:</span>
-              <strong id="full-modal-user-balance" class="mono" style="color:var(--gold-primary);">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-              <span style="color:var(--text-muted);">Actual Payout:</span>
-              <strong id="full-modal-settled-payout" class="mono">--</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px;">
-              <span style="color:var(--text-muted);">Settled At:</span>
-              <span id="full-modal-settled-time" class="mono" style="color:var(--text-muted);">--</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Matka Math / Rule Explanation Box -->
-        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:8px; padding:14px;">
-          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:4px;">
-            📐 Matka Math Verification & Rule Explanation:
-          </div>
-          <div id="full-modal-math-explanation" style="font-size:13px; color:var(--text-main); line-height:1.5;">
-            --
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer Action Buttons -->
-      <div style="border-top:1px solid var(--card-border); padding:14px 20px; display:flex; justify-content:space-between; align-items:center; background:#11161D;">
-        <button type="button" class="btn-action" style="background:#1f6feb; color:#fff;" onclick="editFromFullResultModal()">✏️ Edit Bet Parameters</button>
-        <button type="button" class="btn-action" onclick="closeBetFullResultModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
     let currentFullResultWager = null;
 
     async function openBetFullResultModal(id) {
@@ -2388,7 +2401,7 @@
       openEditWagerModal(wid);
     }
 
-    // Initialize auth check
+    // Start
     checkAuth();
   </script>
 </body>
