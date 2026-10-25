@@ -467,6 +467,177 @@ class AdminWalletController {
     }
 
     /**
+     * GET /api/admin/wagers/market-summary
+     * Market-wise bet aggregation and results breakdown:
+     * Returns each market with total users betted, total bets, total staked amount,
+     * won payout amount, loss amount kept by house, pending stakes, declared results,
+     * game-type breakdown, and number-wise pick summaries.
+     */
+    public function marketBetSummary(Request $request): void {
+        $pdo = Database::getConnection();
+        $date = $request->input('date');
+        $marketFilter = $request->input('market_id');
+
+        $dtCondition = $date ? "DATE(w.created_at) = :dt" : "1=1";
+        $resDtCondition = $date ? "r.result_date = :dt" : "r.result_date = CURRENT_DATE()";
+
+        $sql = "
+            SELECT 
+                m.id as market_id,
+                m.name as market_name,
+                TIME_FORMAT(m.open_time, '%h:%i %p') as open_time,
+                TIME_FORMAT(m.close_time, '%h:%i %p') as close_time,
+                m.status as market_status,
+                COUNT(w.id) as total_bets,
+                COUNT(DISTINCT w.user_id) as total_users,
+                COALESCE(SUM(w.wager_amount), 0) as total_staked,
+                COALESCE(SUM(w.winning_amount), 0) as total_won_payout,
+                COALESCE(SUM(CASE WHEN w.status = 'LOST' THEN w.wager_amount ELSE 0 END), 0) as total_lost_amount,
+                COALESCE(SUM(CASE WHEN w.status = 'PENDING' THEN w.wager_amount ELSE 0 END), 0) as pending_staked,
+                COALESCE(SUM(CASE WHEN w.status = 'PENDING' THEN w.potential_win ELSE 0 END), 0) as pending_exposure,
+                COUNT(DISTINCT CASE WHEN w.status = 'PENDING' THEN w.user_id END) as pending_users,
+                COUNT(DISTINCT CASE WHEN w.status = 'WON' THEN w.user_id END) as win_users,
+                COUNT(DISTINCT CASE WHEN w.status = 'LOST' THEN w.user_id END) as loss_users,
+                SUM(CASE WHEN w.status = 'PENDING' THEN 1 ELSE 0 END) as pending_bets_count,
+                SUM(CASE WHEN w.status = 'WON' THEN 1 ELSE 0 END) as won_bets_count,
+                SUM(CASE WHEN w.status = 'LOST' THEN 1 ELSE 0 END) as lost_bets_count,
+                r.open_panna as result_open_panna,
+                r.jodi as result_jodi,
+                r.close_panna as result_close_panna,
+                r.status as result_status,
+                r.published_at as result_published_at
+            FROM markets m
+            LEFT JOIN demo_wagers w ON w.market_id = m.id AND $dtCondition
+            LEFT JOIN results r ON r.market_id = m.id AND $resDtCondition
+            WHERE 1=1
+        ";
+
+        $params = [];
+        if ($date) {
+            $params[':dt'] = $date;
+        }
+        if ($marketFilter && $marketFilter !== 'ALL') {
+            $sql .= " AND m.id = :mid";
+            $params[':mid'] = $marketFilter;
+        }
+
+        $sql .= " GROUP BY m.id, m.name, m.open_time, m.close_time, m.status, r.open_panna, r.jodi, r.close_panna, r.status, r.published_at
+                  ORDER BY total_bets DESC, total_staked DESC, m.name ASC";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $markets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($markets as &$mkt) {
+            $mid = $mkt['market_id'];
+            $staked = (int)$mkt['total_staked'];
+            $won = (int)$mkt['total_won_payout'];
+            $mkt['house_net_balance'] = $staked - $won;
+
+            if ((int)$mkt['total_bets'] > 0) {
+                // Game type breakdown
+                $gtStmt = $pdo->prepare("
+                    SELECT 
+                        wager_type,
+                        COUNT(*) as bets_count,
+                        COUNT(DISTINCT user_id) as users_count,
+                        COALESCE(SUM(wager_amount), 0) as staked_amount,
+                        COALESCE(SUM(winning_amount), 0) as payout_amount,
+                        SUM(CASE WHEN status = 'WON' THEN 1 ELSE 0 END) as won_count,
+                        SUM(CASE WHEN status = 'LOST' THEN 1 ELSE 0 END) as lost_count,
+                        SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending_count
+                    FROM demo_wagers
+                    WHERE market_id = :mid " . ($date ? "AND DATE(created_at) = :dt" : "") . "
+                    GROUP BY wager_type
+                    ORDER BY staked_amount DESC
+                ");
+                $gtParams = [':mid' => $mid];
+                if ($date) $gtParams[':dt'] = $date;
+                $gtStmt->execute($gtParams);
+                $mkt['game_types'] = $gtStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Top picks / numbers in this market
+                $pickStmt = $pdo->prepare("
+                    SELECT 
+                        selection,
+                        wager_type,
+                        COUNT(*) as bets_count,
+                        COUNT(DISTINCT user_id) as users_count,
+                        COALESCE(SUM(wager_amount), 0) as total_staked,
+                        COALESCE(SUM(potential_win), 0) as potential_payout,
+                        COALESCE(SUM(winning_amount), 0) as won_payout,
+                        SUM(CASE WHEN status = 'WON' THEN 1 ELSE 0 END) as won_count,
+                        SUM(CASE WHEN status = 'LOST' THEN 1 ELSE 0 END) as lost_count,
+                        SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending_count
+                    FROM demo_wagers
+                    WHERE market_id = :mid " . ($date ? "AND DATE(created_at) = :dt" : "") . "
+                    GROUP BY selection, wager_type
+                    ORDER BY total_staked DESC, bets_count DESC
+                    LIMIT 20
+                ");
+                $pickParams = [':mid' => $mid];
+                if ($date) $pickParams[':dt'] = $date;
+                $pickStmt->execute($pickParams);
+                $picks = $pickStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($picks as &$p) {
+                    $p['is_winner'] = false;
+                    if (!empty($mkt['result_jodi']) || !empty($mkt['result_open_panna'])) {
+                        $sel = trim((string)$p['selection']);
+                        $wt = $p['wager_type'];
+                        if ($wt === 'jodi' && $sel === $mkt['result_jodi']) {
+                            $p['is_winner'] = true;
+                        } elseif (in_array($wt, ['single_panna', 'double_panna', 'triple_panna'])) {
+                            if ($sel === $mkt['result_open_panna'] || $sel === $mkt['result_close_panna']) {
+                                $p['is_winner'] = true;
+                            }
+                        } elseif ($wt === 'single_ank') {
+                            $openAnk = strlen($mkt['result_jodi'] ?? '') >= 1 ? substr($mkt['result_jodi'], 0, 1) : '';
+                            $closeAnk = strlen($mkt['result_jodi'] ?? '') >= 2 ? substr($mkt['result_jodi'], 1, 1) : '';
+                            if ($sel === $openAnk || $sel === $closeAnk) {
+                                $p['is_winner'] = true;
+                            }
+                        }
+                    }
+                }
+                $mkt['top_picks'] = $picks;
+            } else {
+                $mkt['game_types'] = [];
+                $mkt['top_picks'] = [];
+            }
+        }
+
+        $totalAllStaked = (int)array_sum(array_column($markets, 'total_staked'));
+        $totalAllWon = (int)array_sum(array_column($markets, 'total_won_payout'));
+        $totalAllLost = (int)array_sum(array_column($markets, 'total_lost_amount'));
+        $totalAllBets = (int)array_sum(array_column($markets, 'total_bets'));
+        $marketsWithBets = count(array_filter($markets, fn($m) => (int)$m['total_bets'] > 0));
+        
+        $allUniqueUsers = 0;
+        if ($totalAllBets > 0) {
+            $userCountSql = "SELECT COUNT(DISTINCT user_id) FROM demo_wagers" . ($date ? " WHERE DATE(created_at) = :dt" : "");
+            $uStmt = $pdo->prepare($userCountSql);
+            if ($date) $uStmt->execute([':dt' => $date]);
+            else $uStmt->execute();
+            $allUniqueUsers = (int)($uStmt->fetchColumn() ?: 0);
+        }
+
+        Response::success([
+            'overview' => [
+                'total_markets' => count($markets),
+                'markets_with_bets' => $marketsWithBets,
+                'total_users' => $allUniqueUsers,
+                'total_bets' => $totalAllBets,
+                'total_staked' => $totalAllStaked,
+                'total_won_payout' => $totalAllWon,
+                'total_lost_amount' => $totalAllLost,
+                'house_net_balance' => $totalAllStaked - $totalAllWon,
+            ],
+            'markets' => $markets,
+        ], 'Market bet summaries retrieved.');
+    }
+
+    /**
      * POST /api/admin/wagers/{id}
      * Admin modification of user wager with full ledger reconciliation and audit logging.
      */

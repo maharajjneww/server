@@ -283,6 +283,43 @@
     .btn-action:hover { border-color: var(--gold-primary); color: var(--gold-primary); }
     .btn-action.btn-danger:hover { border-color: var(--danger); color: var(--danger); }
     .btn-action.btn-success:hover { border-color: var(--success); color: var(--success); }
+    .active-pill {
+      background: var(--gold-primary) !important;
+      color: #000 !important;
+      font-weight: 700 !important;
+      border-color: var(--gold-primary) !important;
+    }
+
+    .market-summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .market-summary-card:hover {
+      border-color: rgba(245, 166, 35, 0.4);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    }
+    .market-metric-box {
+      background: #0D1117;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .market-metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .market-metric-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 3px;
+    }
 
     /* Alert */
     .alert {
@@ -366,6 +403,7 @@
     <div class="nav-tabs">
       <button class="tab-btn active" onclick="switchTab('tab-results', this)">Declare Results</button>
       <button class="tab-btn" onclick="switchTab('tab-queue', this)">Queued & Recent</button>
+      <button class="tab-btn" onclick="switchTab('tab-market-summary', this)">🏢 Market Bet Summaries</button>
       <button class="tab-btn" onclick="switchTab('tab-wagers', this)">User Wagers (Live)</button>
       <button class="tab-btn" onclick="switchTab('tab-analysis', this)">📊 Bet-Wise Analysis</button>
       <button class="tab-btn" onclick="switchTab('tab-wallets', this)">Wallets & Withdrawals</button>
@@ -515,6 +553,69 @@
       </div>
     </div>
 
+    <!-- TAB: Market Bet Summaries (Aggregated by Market) -->
+    <div id="tab-market-summary" class="tab-pane" style="display:none;">
+      <!-- High level stats -->
+      <div class="stat-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom: 20px;">
+        <div class="card" style="padding:14px; border-left: 3px solid var(--blue);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Markets With Bets</div>
+          <div id="mktstat-active-markets" style="font-size:22px; font-weight:800; color:var(--text-main); margin-top:4px;">0</div>
+          <div id="mktstat-total-markets" style="font-size:11px; color:var(--text-muted); margin-top:2px;">Across all markets</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid #8957e5;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Betted Users</div>
+          <div id="mktstat-total-users" style="font-size:22px; font-weight:800; color:#8957e5; margin-top:4px;">0</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Unique users across markets</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--gold-primary);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Total Bet Amount</div>
+          <div id="mktstat-total-staked" style="font-size:22px; font-weight:800; color:var(--gold-primary); margin-top:4px;">0 pts</div>
+          <div id="mktstat-total-bets" style="font-size:11px; color:var(--text-muted); margin-top:2px;">0 total bets placed</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--success);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Win Payout Amount</div>
+          <div id="mktstat-total-won" style="font-size:22px; font-weight:800; color:var(--success); margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Paid to winners</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid var(--danger);">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">House Kept (Lost Bets)</div>
+          <div id="mktstat-total-lost" style="font-size:22px; font-weight:800; color:var(--danger); margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Retained from losing wagers</div>
+        </div>
+        <div class="card" style="padding:14px; border-left: 3px solid #58a6ff;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">House Net Balance</div>
+          <div id="mktstat-net-balance" style="font-size:22px; font-weight:800; color:#58a6ff; margin-top:4px;">0 pts</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Total Stake − Total Payout</div>
+        </div>
+      </div>
+
+      <!-- Controls & Filter -->
+      <div class="card" style="margin-bottom: 16px; padding: 12px 16px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; flex:1;">
+            <input type="text" id="mkt-search" placeholder="Search market name (e.g. Kalyan)..." oninput="filterMarketSummariesUI()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:220px;">
+            <select id="mkt-view-filter" onchange="filterMarketSummariesUI()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
+              <option value="WITH_BETS" selected>Markets with Bets Placed</option>
+              <option value="ALL">All Markets</option>
+              <option value="PENDING">Markets with Active Live Bets</option>
+              <option value="SETTLED">Markets with Declared Results</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" style="background:linear-gradient(135deg, #1f6feb 0%, #8957e5 100%); color:#fff; font-weight:600;" onclick="switchTab('tab-wagers', document.querySelectorAll('.tab-btn')[3])">📋 View All Raw Bets</button>
+            <button class="btn-action" onclick="loadMarketSummaries()">🔄 Refresh Market Sheets</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Cards Container -->
+      <div id="market-summaries-list" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card" style="text-align:center; padding:30px; color:var(--text-muted);">
+          Loading market bet summaries...
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 3: User Wagers (Live) -->
     <div id="tab-wagers" class="tab-pane" style="display:none;">
       <!-- Stats Overview Cards -->
@@ -551,29 +652,32 @@
         </div>
       </div>
 
-      <!-- Filter Controls -->
-      <div class="card" style="margin-bottom: 16px; padding: 12px 16px;">
+      <!-- Quick Status Filter Pills & Search Controls -->
+      <div class="card" style="margin-bottom: 16px; padding: 14px 16px;">
+        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700; margin-right:6px;">Filter By Status:</span>
+          <button id="pill-status-ALL" class="btn-action active-pill" onclick="setWagerStatusPill('ALL')">🌟 All Bets</button>
+          <button id="pill-status-PENDING" class="btn-action" onclick="setWagerStatusPill('PENDING')">⏳ Active Live (Before Result)</button>
+          <button id="pill-status-WON" class="btn-action" onclick="setWagerStatusPill('WON')">🏆 Won Bets Only</button>
+          <button id="pill-status-LOST" class="btn-action" onclick="setWagerStatusPill('LOST')">❌ Lost Bets Only</button>
+        </div>
+
         <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; flex:1;">
-            <input type="text" id="wager-search" placeholder="Search user, email, pick..." oninput="debounceLoadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:200px;">
-            <select id="wager-status-filter" onchange="loadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
-              <option value="PENDING" selected>Active Live Bets (Before Result)</option>
-              <option value="ALL">All Statuses (Live & Settled)</option>
-              <option value="WON">WON Only</option>
-              <option value="LOST">LOST Only</option>
-            </select>
+            <input type="text" id="wager-search" placeholder="Search pick number (e.g. 579, 13), user name or email..." oninput="debounceLoadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px; min-width:260px;">
+            <input type="hidden" id="wager-status-filter" value="ALL">
             <select id="wager-market-filter" onchange="loadWagers()" style="padding:8px 12px; border:1px solid var(--card-border); background:#0D1117; color:var(--text-main); border-radius:6px; font-size:13px;">
               <option value="ALL">All Markets</option>
             </select>
           </div>
           <div style="display:flex; gap:8px;">
-            <button class="btn-action" style="background:linear-gradient(135deg, #1f6feb 0%, #8957e5 100%); color:#fff; font-weight:600;" onclick="switchTab('tab-analysis', document.querySelectorAll('.tab-btn')[3])">📊 Bet-Wise Load & Risk Sheet</button>
+            <button class="btn-action" style="background:linear-gradient(135deg, #1f6feb 0%, #8957e5 100%); color:#fff; font-weight:600;" onclick="switchTab('tab-market-summary', document.querySelectorAll('.tab-btn')[2])">🏢 Market Bet Summaries</button>
             <button class="btn-action" onclick="loadWagers()">🔄 Refresh Bets</button>
           </div>
         </div>
       </div>
 
-      <!-- Wagers Table -->
+      <!-- Wagers Table with Declared Result & Outcome Separated -->
       <div class="card">
         <div class="table-responsive">
           <table>
@@ -587,13 +691,14 @@
                 <th>Pick #</th>
                 <th>Wager Pts</th>
                 <th>Potential Win</th>
-                <th>Status</th>
+                <th>Declared Market Result</th>
+                <th>Bet Outcome</th>
                 <th>Settled At</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="wagers-table-body">
-              <tr><td colspan="11" style="color:var(--text-muted); text-align:center;">Loading wagers...</td></tr>
+              <tr><td colspan="12" style="color:var(--text-muted); text-align:center;">Loading wagers...</td></tr>
             </tbody>
           </table>
         </div>
@@ -794,6 +899,13 @@
       }
     }
 
+    function initDashboard() {
+      loadMarkets();
+      loadPendingResults();
+      loadMarketSummaries();
+      loadWagers();
+    }
+
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
@@ -851,6 +963,7 @@
       if (btn) btn.classList.add('active');
 
       if (tabId === 'tab-queue') loadPendingResults();
+      if (tabId === 'tab-market-summary') loadMarketSummaries();
       if (tabId === 'tab-wagers') loadWagers();
       if (tabId === 'tab-analysis') loadBetAnalysis();
       if (tabId === 'tab-wallets') { loadWithdrawals(); loadWallets(); }
@@ -1194,6 +1307,18 @@
       }
     }
 
+    // Quick status pill filter for wagers
+    function setWagerStatusPill(st) {
+      document.querySelectorAll('#tab-wagers .btn-action').forEach(b => {
+        if (b.id && b.id.startsWith('pill-status-')) b.classList.remove('active-pill');
+      });
+      const targetBtn = document.getElementById(`pill-status-${st}`);
+      if (targetBtn) targetBtn.classList.add('active-pill');
+      const input = document.getElementById('wager-status-filter');
+      if (input) input.value = st;
+      loadWagers();
+    }
+
     // Debounced Wager Search
     let wagerDebounceTimer = null;
     function debounceLoadWagers() {
@@ -1205,8 +1330,13 @@
     async function loadWagers() {
       const tbody = document.getElementById('wagers-table-body');
       const search = (document.getElementById('wager-search')?.value || '').trim();
-      const status = document.getElementById('wager-status-filter')?.value || 'PENDING';
+      let status = document.getElementById('wager-status-filter')?.value || 'ALL';
       const marketId = document.getElementById('wager-market-filter')?.value || 'ALL';
+
+      // If user typed a search term (e.g. "579" or "13"), search across all statuses so settled bets are not hidden
+      if (search && status === 'PENDING') {
+        status = 'ALL';
+      }
 
       const queryParams = new URLSearchParams();
       if (search) queryParams.set('search', search);
@@ -1264,6 +1394,26 @@
               const statusClass = w.status === 'WON' ? 'badge-won' : (w.status === 'LOST' ? 'badge-lost' : 'badge-pending');
               const wagerPts = Number(w.points_wagered !== undefined ? w.points_wagered : (w.wager_amount || 0)).toLocaleString();
               const winPts = Number(w.potential_win_points !== undefined ? w.potential_win_points : (w.potential_win || 0)).toLocaleString();
+              const wonAmount = Number(w.winning_amount || 0).toLocaleString();
+
+              // Declared market result string
+              let declaredResultStr = '<span style="color:var(--text-muted); font-size:11px;">⏳ Awaiting Result</span>';
+              if (w.result_open_panna || w.result_jodi || w.result_close_panna) {
+                const op = w.result_open_panna || '***';
+                const jd = w.result_jodi || '**';
+                const cp = w.result_close_panna || '***';
+                declaredResultStr = `<span class="mono" style="font-weight:700; color:var(--text-main); font-size:13px;">${op} - ${jd} - ${cp}</span>`;
+              }
+
+              // Outcome badge
+              let outcomeBadge = `<span class="badge ${statusClass}">${w.status}</span>`;
+              if (w.status === 'WON') {
+                outcomeBadge = `<span class="badge badge-won" style="font-size:11px; white-space:nowrap;">🏆 WON +${wonAmount || winPts} pts</span>`;
+              } else if (w.status === 'LOST') {
+                outcomeBadge = `<span class="badge badge-lost" style="font-size:11px; white-space:nowrap;">❌ LOST -${wagerPts} pts</span>`;
+              } else if (w.status === 'PENDING') {
+                outcomeBadge = `<span class="badge badge-pending" style="font-size:11px;">⏳ Awaiting Result</span>`;
+              }
 
               tr.innerHTML = `
                 <td class="mono" style="font-size:12px; color:var(--text-muted); font-weight:700;">#${w.id}</td>
@@ -1274,10 +1424,11 @@
                 </td>
                 <td style="font-weight:600; color:var(--gold-primary);">${w.market_name || w.market_id}</td>
                 <td><span class="badge" style="background:#161B22; border:1px solid #30363D; font-size:11px;">${w.game_type || w.wager_type}</span></td>
-                <td class="mono" style="font-weight:800; font-size:14px; color:var(--gold-primary);">${w.bet_number || w.selection}</td>
+                <td class="mono" style="font-weight:800; font-size:15px; color:var(--gold-primary);">${w.bet_number || w.selection}</td>
                 <td class="mono" style="font-weight:600;">${wagerPts} pts</td>
                 <td class="mono" style="color:var(--success); font-weight:700;">${winPts} pts</td>
-                <td><span class="badge ${statusClass}">${w.status}</span></td>
+                <td>${declaredResultStr}</td>
+                <td>${outcomeBadge}</td>
                 <td style="font-size:11px; color:var(--text-muted);">${w.settled_at || (w.status === 'PENDING' ? '⏳ Awaiting Result' : '-')}</td>
                 <td>
                   <div style="display:flex; gap:6px;">
@@ -1289,19 +1440,282 @@
               tbody.appendChild(tr);
             });
           } else {
-            const isPending = (status === 'PENDING');
-            tbody.innerHTML = `<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">
-              ${isPending 
-                ? 'No active pending bets waiting for result declaration. (Switch filter to "All Statuses" to view settled bets).'
-                : 'No user wagers match the selected filters.'}
+            tbody.innerHTML = `<tr><td colspan="12" style="color:var(--text-muted); text-align:center; padding:18px;">
+              ${search ? `No wagers found matching "${search}".` : 'No user wagers match the selected filters.'}
             </td></tr>`;
           }
         } else {
-          tbody.innerHTML = '<tr><td colspan="11" style="color:var(--text-muted); text-align:center; padding:18px;">No user bets recorded yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="12" style="color:var(--text-muted); text-align:center; padding:18px;">No user bets recorded yet.</td></tr>';
         }
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="11" style="color:var(--danger); text-align:center;">Failed to load wagers.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="color:var(--danger); text-align:center;">Failed to load wagers.</td></tr>';
       }
+    }
+
+    // Load & Render Market-Wise Bet Summaries
+    let allMarketSummaries = [];
+
+    async function loadMarketSummaries() {
+      const container = document.getElementById('market-summaries-list');
+      if (!container) return;
+      container.innerHTML = '<div class="card" style="text-align:center; padding:30px; color:var(--text-muted);">Loading market summaries...</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/wagers/market-summary`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const overview = json.data.overview || {};
+          const activeMarketsEl = document.getElementById('mktstat-active-markets');
+          const totalMarketsEl = document.getElementById('mktstat-total-markets');
+          const totalUsersEl = document.getElementById('mktstat-total-users');
+          const totalStakedEl = document.getElementById('mktstat-total-staked');
+          const totalBetsEl = document.getElementById('mktstat-total-bets');
+          const totalWonEl = document.getElementById('mktstat-total-won');
+          const totalLostEl = document.getElementById('mktstat-total-lost');
+          const netBalanceEl = document.getElementById('mktstat-net-balance');
+
+          if (activeMarketsEl) activeMarketsEl.innerText = overview.markets_with_bets || 0;
+          if (totalMarketsEl) totalMarketsEl.innerText = `${overview.total_markets || 0} total registered markets`;
+          if (totalUsersEl) totalUsersEl.innerText = `${overview.total_users || 0} users`;
+          if (totalStakedEl) totalStakedEl.innerText = Number(overview.total_staked || 0).toLocaleString() + ' pts';
+          if (totalBetsEl) totalBetsEl.innerText = `${overview.total_bets || 0} total bets placed`;
+          if (totalWonEl) totalWonEl.innerText = Number(overview.total_won_payout || 0).toLocaleString() + ' pts';
+          if (totalLostEl) totalLostEl.innerText = Number(overview.total_lost_amount || 0).toLocaleString() + ' pts';
+          if (netBalanceEl) {
+            const net = Number(overview.house_net_balance || 0);
+            netBalanceEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' pts';
+            netBalanceEl.style.color = (net >= 0 ? 'var(--success)' : 'var(--danger)');
+          }
+
+          allMarketSummaries = Array.isArray(json.data.markets) ? json.data.markets : [];
+          filterMarketSummariesUI();
+        } else {
+          container.innerHTML = '<div class="card" style="text-align:center; padding:30px; color:var(--danger);">Failed to load market summaries.</div>';
+        }
+      } catch (e) {
+        container.innerHTML = `<div class="card" style="text-align:center; padding:30px; color:var(--danger);">Error: ${e.message}</div>`;
+      }
+    }
+
+    function filterMarketSummariesUI() {
+      const container = document.getElementById('market-summaries-list');
+      if (!container) return;
+
+      const search = (document.getElementById('mkt-search')?.value || '').trim().toLowerCase();
+      const filter = document.getElementById('mkt-view-filter')?.value || 'WITH_BETS';
+
+      let list = allMarketSummaries.slice();
+
+      if (filter === 'WITH_BETS') {
+        list = list.filter(m => Number(m.total_bets || 0) > 0);
+      } else if (filter === 'PENDING') {
+        list = list.filter(m => Number(m.pending_bets_count || 0) > 0);
+      } else if (filter === 'SETTLED') {
+        list = list.filter(m => !!(m.result_jodi || m.result_open_panna));
+      }
+
+      if (search) {
+        list = list.filter(m => (m.market_name || '').toLowerCase().includes(search) || (m.market_id || '').toLowerCase().includes(search));
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center; padding:36px; color:var(--text-muted);">
+            <div style="font-size:24px; margin-bottom:8px;">🔍</div>
+            <div style="font-weight:600; font-size:15px; color:var(--text-main);">No markets found matching criteria.</div>
+            <div style="font-size:12px; margin-top:4px;">Try changing the filter dropdown above or clearing your search term.</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      list.forEach(m => {
+        const totalBets = Number(m.total_bets || 0);
+        const totalUsers = Number(m.total_users || 0);
+        const totalStaked = Number(m.total_staked || 0);
+        const totalWon = Number(m.total_won_payout || 0);
+        const totalLost = Number(m.total_lost_amount || 0);
+        const pendingStaked = Number(m.pending_staked || 0);
+        const pendingUsers = Number(m.pending_users || 0);
+        const houseNet = Number(m.house_net_balance || 0);
+
+        const openP = m.result_open_panna || '***';
+        const jodi = m.result_jodi || '**';
+        const closeP = m.result_close_panna || '***';
+        const hasResult = !!(m.result_open_panna || m.result_jodi || m.result_close_panna);
+
+        const card = document.createElement('div');
+        card.className = 'market-summary-card';
+
+        // Build game types breakdown table if available
+        let gameTypesHtml = '';
+        if (Array.isArray(m.game_types) && m.game_types.length > 0) {
+          gameTypesHtml = `
+            <div style="margin-top:14px; background:#0D1117; border-radius:8px; border:1px solid var(--card-border); padding:12px;">
+              <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between;">
+                <span>Game Type Distribution in this Market</span>
+                <span style="color:var(--gold-primary); font-weight:600;">${m.game_types.length} active types</span>
+              </div>
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Game Type</th>
+                      <th>Total Bets</th>
+                      <th>Users</th>
+                      <th>Total Staked</th>
+                      <th>Total Payout</th>
+                      <th>Status Breakdown</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${m.game_types.map(gt => `
+                      <tr>
+                        <td><span class="badge" style="background:#161B22; border:1px solid #30363D;">${gt.wager_type}</span></td>
+                        <td class="mono" style="font-weight:700;">${gt.bets_count}</td>
+                        <td>${gt.users_count} user(s)</td>
+                        <td class="mono" style="font-weight:700; color:var(--gold-primary);">${Number(gt.staked_amount).toLocaleString()} pts</td>
+                        <td class="mono" style="font-weight:700; color:var(--success);">${Number(gt.payout_amount).toLocaleString()} pts</td>
+                        <td>
+                          <span class="badge badge-won" style="font-size:10px;">${gt.won_count || 0} won</span>
+                          <span class="badge badge-lost" style="font-size:10px;">${gt.lost_count || 0} lost</span>
+                          <span class="badge badge-pending" style="font-size:10px;">${gt.pending_count || 0} live</span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        // Build top picks breakdown if available
+        let topPicksHtml = '';
+        if (Array.isArray(m.top_picks) && m.top_picks.length > 0) {
+          topPicksHtml = `
+            <div style="margin-top:14px; background:#0D1117; border-radius:8px; border:1px solid var(--card-border); padding:12px;">
+              <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between;">
+                <span>Betted Numbers / Picks in this Market</span>
+                <span style="color:var(--gold-primary); font-weight:600;">${m.top_picks.length} picks</span>
+              </div>
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Pick #</th>
+                      <th>Game Type</th>
+                      <th>Users Betted</th>
+                      <th>Total Bets</th>
+                      <th>Total Amount</th>
+                      <th>Potential / Won Payout</th>
+                      <th>Result Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${m.top_picks.map(p => {
+                      let matchBadge = '<span class="badge" style="background:#21262d; color:var(--text-muted);">Awaiting Result</span>';
+                      if (p.is_winner) {
+                        matchBadge = '<span class="badge badge-winner">🏆 MATCHED WINNER</span>';
+                      } else if (hasResult) {
+                        matchBadge = '<span class="badge badge-lost">❌ NO MATCH</span>';
+                      }
+                      return `
+                        <tr>
+                          <td class="mono" style="font-size:15px; font-weight:800; color:var(--gold-primary);">${p.selection}</td>
+                          <td><span class="badge" style="background:#161B22; border:1px solid #30363D;">${p.wager_type}</span></td>
+                          <td>${p.users_count} user(s)</td>
+                          <td class="mono">${p.bets_count}</td>
+                          <td class="mono" style="font-weight:700;">${Number(p.total_staked).toLocaleString()} pts</td>
+                          <td class="mono" style="font-weight:700; color:var(--success);">${Number(p.won_payout > 0 ? p.won_payout : p.potential_payout).toLocaleString()} pts</td>
+                          <td>${matchBadge}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <!-- Header -->
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h3 style="font-size:18px; font-weight:800; color:var(--text-main);">${m.market_name}</h3>
+                <span class="badge" style="background:rgba(245, 166, 35, 0.15); color:var(--gold-primary); border:1px solid rgba(245, 166, 35, 0.3); font-size:12px;">${m.open_time || ''} - ${m.close_time || ''}</span>
+                <span class="badge" style="background:#161B22; border:1px solid #30363D;">${m.market_status || 'OPEN'}</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:3px;">Market ID: <span class="mono">${m.market_id}</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="text-align:right;">
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Declared Result</div>
+                <div class="mono" style="font-size:16px; font-weight:800; color:${hasResult ? 'var(--gold-primary)' : 'var(--text-muted)'}; margin-top:2px;">
+                  ${hasResult ? `${openP} - ${jodi} - ${closeP}` : '⏳ Result Not Declared'}
+                </div>
+              </div>
+              <button class="btn-action" style="background:#238636; color:#fff; font-weight:600; padding:6px 12px; font-size:12px;" onclick="inspectMarketBets('${m.market_id}')">🔍 Inspect Raw Bets</button>
+            </div>
+          </div>
+
+          <!-- Market Metrics Grid -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+            <div class="market-metric-box" style="border-left:3px solid #8957e5;">
+              <div class="market-metric-label">Total Users Betted</div>
+              <div class="market-metric-val" style="color:#8957e5;">${totalUsers} <span style="font-size:13px; font-weight:500;">users</span></div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${totalBets} bets placed</div>
+            </div>
+            <div class="market-metric-box" style="border-left:3px solid var(--gold-primary);">
+              <div class="market-metric-label">Total Bet Amount</div>
+              <div class="market-metric-val" style="color:var(--gold-primary);">${totalStaked.toLocaleString()} <span style="font-size:13px; font-weight:500;">pts</span></div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Total stake collected</div>
+            </div>
+            <div class="market-metric-box" style="border-left:3px solid var(--success);">
+              <div class="market-metric-label">Win Payout Amount</div>
+              <div class="market-metric-val" style="color:var(--success);">${totalWon.toLocaleString()} <span style="font-size:13px; font-weight:500;">pts</span></div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${m.win_users || 0} winning user(s)</div>
+            </div>
+            <div class="market-metric-box" style="border-left:3px solid var(--danger);">
+              <div class="market-metric-label">House Kept (Lost Bets)</div>
+              <div class="market-metric-val" style="color:var(--danger);">${totalLost.toLocaleString()} <span style="font-size:13px; font-weight:500;">pts</span></div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${m.loss_users || 0} losing user(s)</div>
+            </div>
+            <div class="market-metric-box" style="border-left:3px solid #E09612;">
+              <div class="market-metric-label">Active Live Bets</div>
+              <div class="market-metric-val" style="color:#E09612;">${pendingStaked.toLocaleString()} <span style="font-size:13px; font-weight:500;">pts</span></div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${pendingUsers} user(s) awaiting result</div>
+            </div>
+            <div class="market-metric-box" style="border-left:3px solid #58a6ff;">
+              <div class="market-metric-label">House Net Balance</div>
+              <div class="market-metric-val" style="color:${houseNet >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                ${houseNet >= 0 ? '+' : ''}${houseNet.toLocaleString()} <span style="font-size:13px; font-weight:500;">pts</span>
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Stake − Payout</div>
+            </div>
+          </div>
+
+          <!-- Sub-breakdowns -->
+          ${gameTypesHtml}
+          ${topPicksHtml}
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function inspectMarketBets(marketId) {
+      const marketSelect = document.getElementById('wager-market-filter');
+      if (marketSelect) {
+        marketSelect.value = marketId;
+      }
+      setWagerStatusPill('ALL');
+      switchTab('tab-wagers', document.querySelectorAll('.tab-btn')[3]);
     }
 
     // Load Wallets for Adjustment
@@ -1973,6 +2387,9 @@
       closeBetFullResultModal();
       openEditWagerModal(wid);
     }
+
+    // Initialize auth check
+    checkAuth();
   </script>
 </body>
 </html>
