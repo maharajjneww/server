@@ -24,6 +24,15 @@
       --radius: 10px;
     }
 
+    @keyframes pulseGlow {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(63, 185, 80, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0); }
+    }
+    .live-pulse {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg-dark);
@@ -390,9 +399,15 @@
       <span class="brand-badge">CONTROL</span>
       <h1>Matka Live &bull; Admin Panel</h1>
     </div>
-    <div class="admin-pill">
-      <span id="admin-user-display">admin@matkalive.internal</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div id="live-sync-indicator" style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:#3fb950; background:rgba(46,160,67,0.12); padding:6px 12px; border-radius:20px; border:1px solid rgba(46,160,67,0.35); cursor:pointer; user-select:none; transition:all 0.2s ease;" onclick="toggleAutoSync()" title="Click to pause or resume real-time background sync">
+        <span class="live-pulse" style="width:8px; height:8px; border-radius:50%; background:#3fb950; display:inline-block;"></span>
+        <span id="live-sync-label">LIVE SYNC (12s)</span>
+      </div>
+      <div class="admin-pill">
+        <span id="admin-user-display">admin@matkalive.internal</span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
     </div>
   </header>
 
@@ -1064,6 +1079,76 @@
     let token = localStorage.getItem('admin_token') || '';
     const API_BASE = '/api';
 
+    // Real-Time Background Auto-Sync
+    let autoSyncEnabled = true;
+    let autoSyncTimer = null;
+
+    function startAutoSync() {
+      if (autoSyncTimer) clearInterval(autoSyncTimer);
+      autoSyncTimer = setInterval(performAutoSync, 12000);
+    }
+
+    function toggleAutoSync() {
+      autoSyncEnabled = !autoSyncEnabled;
+      const indicator = document.getElementById('live-sync-indicator');
+      const label = document.getElementById('live-sync-label');
+      const dot = indicator ? indicator.querySelector('.live-pulse') : null;
+      if (autoSyncEnabled) {
+        if (indicator) {
+          indicator.style.borderColor = 'rgba(46,160,67,0.35)';
+          indicator.style.background = 'rgba(46,160,67,0.12)';
+          indicator.style.color = '#3fb950';
+        }
+        if (dot) {
+          dot.style.background = '#3fb950';
+          dot.style.display = 'inline-block';
+        }
+        if (label) label.innerText = 'LIVE SYNC (12s)';
+        startAutoSync();
+        showAlert('Auto-sync resumed: data refreshes every 12 seconds.');
+      } else {
+        if (indicator) {
+          indicator.style.borderColor = 'rgba(139,148,158,0.3)';
+          indicator.style.background = 'rgba(139,148,158,0.1)';
+          indicator.style.color = '#8b949e';
+        }
+        if (dot) {
+          dot.style.background = '#8b949e';
+        }
+        if (label) label.innerText = 'SYNC PAUSED';
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        showAlert('Auto-sync paused.', false);
+      }
+    }
+
+    async function performAutoSync() {
+      if (!autoSyncEnabled || !token) return;
+
+      // Do not auto-sync table if edit modal is currently open to avoid replacing user input
+      const editModal = document.getElementById('edit-wager-modal');
+      const isEditing = editModal && editModal.style.display !== 'none';
+
+      try {
+        const activePane = document.querySelector('.tab-pane.active');
+        const activeTabId = activePane ? activePane.id : '';
+
+        if (activeTabId === 'tab-results') {
+          loadMarkets();
+        } else if (activeTabId === 'tab-queue') {
+          loadPendingQueue();
+        } else if (activeTabId === 'tab-market-summary') {
+          loadMarketSummaries();
+        } else if (activeTabId === 'tab-wagers' && !isEditing) {
+          loadWagers();
+        } else if (activeTabId === 'tab-analysis') {
+          loadBetAnalysis();
+        } else if (activeTabId === 'tab-wallets') {
+          loadWallets();
+          loadWithdrawals();
+        }
+      } catch (_) {}
+    }
+
     // Auth verification
     async function checkAuth() {
       if (token) {
@@ -1093,6 +1178,7 @@
       loadPendingResults();
       loadMarketSummaries();
       loadWagers();
+      startAutoSync();
     }
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
