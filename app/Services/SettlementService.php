@@ -74,6 +74,23 @@ class SettlementService {
                     continue; // Skip if already settled by another process
                 }
 
+                $isFullResult = (!empty($closePanna) && $closePanna !== '***' && strpos($jodi, '*') === false);
+
+                // If only Open has been declared (half result):
+                // 1. Jodi bets cannot be settled yet (they need both digits). Keep UNSETTLED / PENDING.
+                // 2. Close Panna bets cannot be settled yet. Keep UNSETTLED / PENDING.
+                if (!$isFullResult) {
+                    if ($wagerType === 'jodi') {
+                        $pdo->rollBack();
+                        continue;
+                    }
+                    if (in_array($wagerType, ['single_panna', 'double_panna', 'triple_panna']) && $selection !== $openPanna) {
+                        // Doesn't match Open Panna, but could still match Close Panna later!
+                        $pdo->rollBack();
+                        continue;
+                    }
+                }
+
                 $isWin = false;
 
                 switch ($wagerType) {
