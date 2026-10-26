@@ -130,6 +130,38 @@ class ExternalFeedService {
                 continue;
             }
 
+            // If the Open session was already published by Admin, automatically complete the Close session and settle remaining wagers!
+            if ($existing && $existing['status'] === 'published' && ($existing['close_panna'] === '***' || strpos($existing['jodi'], '*') !== false) && $closePanna !== '***') {
+                $upStmt = $pdo->prepare("
+                    UPDATE results 
+                    SET open_panna = :open, jodi = :jodi, close_panna = :close, received_at = NOW(), updated_at = NOW() 
+                    WHERE id = :id
+                ");
+                $upStmt->execute([
+                    ':open' => $openPanna,
+                    ':jodi' => $jodi,
+                    ':close' => $closePanna,
+                    ':id' => $existing['id'],
+                ]);
+
+                SettlementService::settleMarketWagers(
+                    $marketId,
+                    (int)$existing['id'],
+                    $openPanna,
+                    $jodi,
+                    $closePanna
+                );
+
+                $synced[] = [
+                    'market_id' => $marketId,
+                    'name' => $rawName,
+                    'raw_result' => $rawResult,
+                    'parsed' => "$openPanna-$jodi-$closePanna",
+                    'status' => 'published',
+                ];
+                continue;
+            }
+
             // Results from DPBoss feed enter 'pending_validation' Admin Review Queue (Section 20 & 21)
             // Allows Admin to review numbers, evaluate bet liabilities, and publish or schedule on demand
             $stmt = $pdo->prepare("
